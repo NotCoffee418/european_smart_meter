@@ -1,4 +1,4 @@
-module belgian_smart_meter_api
+module github.com/NotCoffee418/european_smart_meter
 
 go 1.24.2
 
