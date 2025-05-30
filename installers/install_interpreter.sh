@@ -19,7 +19,8 @@ USB_COUNT=$(echo "$USB_DEVICES" | grep -c "ttyUSB" 2>/dev/null || echo "0")
 
 if [ "$USB_COUNT" -eq 0 ]; then
     echo "⚠️  Warning: No /dev/ttyUSB* devices found. Make sure your smart meter is connected."
-    read -p "Serial device path (default: /dev/ttyUSB0): " SERIAL_DEVICE < /dev/tty < /dev/tty
+    exec < /dev/tty
+    read -p "Serial device path (default: /dev/ttyUSB0): " SERIAL_DEVICE < /dev/tty
     SERIAL_DEVICE=${SERIAL_DEVICE:-/dev/ttyUSB0}
 elif [ "$USB_COUNT" -eq 1 ]; then
     SERIAL_DEVICE="$USB_DEVICES"
@@ -34,7 +35,8 @@ fi
 echo "Baudrate options:"
 echo "  9600   - Older meters"
 echo "  115200 - Newer meters (DSMR 4.0+/ESMR 5.x+)"
-read -p "Baudrate (default: 115200): " BAUDRATE < /dev/tty
+exec < /dev/tty
+read -p "Baudrate (default: 115200): " BAUDRATE
 BAUDRATE=${BAUDRATE:-115200}
 
 echo "Using device: $SERIAL_DEVICE at $BAUDRATE baud"
