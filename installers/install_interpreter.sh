@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "Installing European Smart Meter..."
+echo "Installing European Smart Meter Interpreter API..."
 
 # Get configuration from user
 echo ""
