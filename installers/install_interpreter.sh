@@ -92,6 +92,12 @@ fi
 
 echo "Downloading from: $LATEST_URL"
 
+# Stop service if it's running (for updates)
+if systemctl is-active --quiet european-smart-meter.service 2>/dev/null; then
+    echo "Stopping existing service for update..."
+    systemctl stop european-smart-meter.service
+fi
+
 # Download the binary
 curl -L -o "$INSTALL_DIR/interpreter_api" "$LATEST_URL"
 chmod +x "$INSTALL_DIR/interpreter_api"
