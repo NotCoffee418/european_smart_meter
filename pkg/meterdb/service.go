@@ -27,11 +27,11 @@ var migrationFS embed.FS
 
 // Initialize must be called manually on startup
 func InitializeDatabase() {
-	// Set WAL (can't be done in migration, safe to run multiple times)
+	// Create DB before migrations
 	db := GetDB()
-	_, err := db.Exec("PRAGMA journal_mode=WAL")
+	_, err := db.Exec("SELECT 1;")
 	if err != nil {
-		log.Printf("Warning: Could not set WAL mode: %v", err)
+		log.Printf("Warning: Could not create DB: %v", err)
 	}
 
 	// Apply migrations

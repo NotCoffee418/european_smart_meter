@@ -21,13 +21,11 @@ func InsertTotalPowerReading(reading *MeterDbTotalPowerReading) error {
 
 	_, err := db.Exec(
 		"INSERT INTO total_power_readings "+
-			"(timestamp, consumption_day_wh, production_day_wh, consumption_night_wh, production_night_wh) "+
-			"VALUES (?, ?, ?, ?, ?)",
+			"(timestamp, watthour, reading_type) "+
+			"VALUES (?, ?, ?)",
 		reading.Timestamp,
-		reading.TotalConsumptionDayWh,
-		reading.TotalProductionDayWh,
-		reading.TotalConsumptionNightWh,
-		reading.TotalProductionNightWh,
+		reading.Watthour,
+		reading.ReadingType,
 	)
 	if err != nil {
 		return err
@@ -49,4 +47,18 @@ func InsertTotalGasReading(reading *MeterDbTotalGasReading) error {
 		return err
 	}
 	return nil
+}
+
+func GetLastTotalPowerReading(readingType MeterDbPowerReadingType) (*MeterDbTotalPowerReading, error) {
+	db := GetDB()
+
+	var reading MeterDbTotalPowerReading
+	err := db.QueryRow("SELECT timestamp, watthour, reading_type "+
+		"FROM total_power_readings WHERE reading_type = ? ORDER BY timestamp DESC LIMIT 1",
+		readingType,
+	).Scan(&reading.Timestamp, &reading.Watthour, &reading.ReadingType)
+	if err != nil {
+		return nil, err
+	}
+	return &reading, nil
 }
