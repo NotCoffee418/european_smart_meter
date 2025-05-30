@@ -65,7 +65,7 @@ func StartListener(host string, funcToCall func(reading *RawMeterReading)) {
 				continue
 			}
 
-			log.Println("Connected! Waiting for meter readings...")
+			log.Println("Connected! Accepting meter readings.")
 
 			// Reset retry count on successful connection
 			retryCount = 0

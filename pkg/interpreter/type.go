@@ -22,7 +22,7 @@ type RawMeterReading struct {
 	TotalProductionNightKWH  float64 `json:"total_production_night_kwh"`
 
 	// Electrical info
-	CurrentTariff int     `json:"current_tariff"`
+	CurrentTariff int     `json:"current_tariff"` // 1 = Day, 2 = Night
 	L1VoltageV    float64 `json:"l1_voltage_v"`
 	L2VoltageV    float64 `json:"l2_voltage_v"`
 	L3VoltageV    float64 `json:"l3_voltage_v"`
