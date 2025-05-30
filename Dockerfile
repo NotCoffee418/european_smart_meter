@@ -17,12 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create non-root user for security
-RUN useradd -m -u 1000 p1user && chown -R p1user:p1user /app
-
-# Switch to non-root user
-USER p1user
-
 # Expose port
 EXPOSE 9039
 
