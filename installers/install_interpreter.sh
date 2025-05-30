@@ -94,7 +94,7 @@ echo "Downloading from: $LATEST_URL"
 
 # Stop service if it exists (for updates)
 echo "Stopping existing service if running..."
-systemctl stop european-smart-meter.service 2>/dev/null || true
+systemctl stop esm-interpreter-api.service 2>/dev/null || true
 sleep 1
 
 # Download the binary
@@ -104,7 +104,7 @@ chmod +x "$INSTALL_DIR/interpreter_api"
 echo "Binary installed to $INSTALL_DIR/interpreter_api"
 
 # Create systemd service
-SERVICE_FILE="/etc/systemd/system/european-smart-meter.service"
+SERVICE_FILE="/etc/systemd/system/esm-interpreter-api.service"
 cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=European Smart Meter Interpreter API
@@ -130,8 +130,8 @@ echo "Created systemd service"
 # Reload systemd, enable and start service
 echo "Starting service..."
 systemctl daemon-reload
-systemctl enable european-smart-meter.service
-systemctl restart european-smart-meter.service
+systemctl enable esm-interpreter-api.service
+systemctl restart esm-interpreter-api.service
 
 # Wait a bit for service to start
 echo "Waiting for service to start..."
@@ -144,8 +144,8 @@ if command -v python3 &> /dev/null; then
         echo "✅ Service is running and responding with valid JSON!"
     else
         echo "❌ Service test failed. Check status with:"
-        echo "systemctl status european-smart-meter"
-        echo "journalctl -u european-smart-meter -f"
+        echo "systemctl status esm-interpreter-api"
+        echo "journalctl -u esm-interpreter-api -f"
         exit 1
     fi
 else
@@ -155,5 +155,5 @@ fi
 
 echo ""
 echo "Installation complete!"
-echo "Service status: systemctl status european-smart-meter"
-echo "View logs: journalctl -u european-smart-meter -f"
+echo "Service status: systemctl status esm-interpreter-api"
+echo "View logs: journalctl -u esm-interpreter-api -f"
