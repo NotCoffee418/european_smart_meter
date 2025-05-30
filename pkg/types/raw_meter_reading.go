@@ -2,7 +2,7 @@ package types
 
 import "encoding/json"
 
-type MeterReading struct {
+type RawMeterReading struct {
 	Timestamp string `json:"timestamp"`
 
 	// Current consumption/production
@@ -43,7 +43,7 @@ type MeterReading struct {
 }
 
 // To Json Bytes
-func (m *MeterReading) ToJsonBytes() []byte {
+func (m *RawMeterReading) ToJsonBytes() []byte {
 	json, err := json.Marshal(m)
 	if err != nil {
 		return nil
@@ -52,8 +52,8 @@ func (m *MeterReading) ToJsonBytes() []byte {
 }
 
 // From Json Bytes
-func MeterReadingFromJsonBytes(jsonData []byte) *MeterReading {
-	var meterReading MeterReading
+func MeterReadingFromJsonBytes(jsonData []byte) *RawMeterReading {
+	var meterReading RawMeterReading
 	err := json.Unmarshal(jsonData, &meterReading)
 	if err != nil {
 		return nil

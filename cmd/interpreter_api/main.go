@@ -25,7 +25,7 @@ type P1Reader struct {
 	port           string
 	baudrate       uint
 	serialPort     io.ReadWriteCloser
-	latestReading  *types.MeterReading
+	latestReading  *types.RawMeterReading
 	readingMutex   sync.RWMutex
 	wsClients      map[*websocket.Conn]bool
 	wsClientsMutex sync.RWMutex
@@ -120,13 +120,13 @@ func (p *P1Reader) ValidateCRC(telegram string) bool {
 	return strings.ToUpper(givenCRC) == calcCRCHex
 }
 
-func (p *P1Reader) ParseTelegram(telegram string) *types.MeterReading {
+func (p *P1Reader) ParseTelegram(telegram string) *types.RawMeterReading {
 	if !p.ValidateCRC(telegram) {
 		log.Println("Invalid CRC, skipping telegram")
 		return nil
 	}
 
-	reading := &types.MeterReading{
+	reading := &types.RawMeterReading{
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
 
@@ -275,13 +275,13 @@ func (p *P1Reader) StartReading() {
 	log.Printf("Too many consecutive errors (%d), stopping reader", maxErrors)
 }
 
-func (p *P1Reader) GetLatestReading() *types.MeterReading {
+func (p *P1Reader) GetLatestReading() *types.RawMeterReading {
 	p.readingMutex.RLock()
 	defer p.readingMutex.RUnlock()
 	return p.latestReading
 }
 
-func (p *P1Reader) BroadcastToWebSockets(reading *types.MeterReading) {
+func (p *P1Reader) BroadcastToWebSockets(reading *types.RawMeterReading) {
 	p.wsClientsMutex.RLock()
 	clients := make([]*websocket.Conn, 0, len(p.wsClients))
 	for client := range p.wsClients {

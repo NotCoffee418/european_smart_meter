@@ -29,11 +29,18 @@ jobs:
           # Create dist directory
           mkdir -p dist
           
-          # Build for Linux platforms (serial hardware focus)
+          # Build interpreter_api
           GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/interpreter_api-linux-amd64 cmd/interpreter_api/main.go
           GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/interpreter_api-linux-arm64 cmd/interpreter_api/main.go
           GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o dist/interpreter_api-linux-arm6 cmd/interpreter_api/main.go
           GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o dist/interpreter_api-linux-arm7 cmd/interpreter_api/main.go
+
+          # Build meter_collector
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/meter_collector-linux-amd64 cmd/meter_collector/main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/meter_collector-linux-arm64 cmd/meter_collector/main.go
+          GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o dist/meter_collector-linux-arm6 cmd/meter_collector/main.go
+          GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o dist/meter_collector-linux-arm7 cmd/meter_collector/main.go
+
           
       - name: Create checksums
         run: |
