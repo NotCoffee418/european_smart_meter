@@ -145,18 +145,36 @@ func (p *P1Reader) Disconnect() {
 func (p *P1Reader) ValidateCRC(telegram string) bool {
 	parts := strings.Split(telegram, "!")
 	if len(parts) != 2 || len(parts[1]) < 4 {
+		log.Printf("CRC validation failed: invalid telegram format")
 		return false
 	}
 
 	data := parts[0] + "!"
 	givenCRC := parts[1][:4]
 
-	// Use CRC16_ARC which matches DSMR specification
-	table := crc16.MakeTable(crc16.CRC16_ARC)
-	calcCRC := crc16.Checksum([]byte(data), table)
-	calcCRCHex := fmt.Sprintf("%04X", calcCRC)
+	// Try the most common DSMR CRC variants
+	variants := map[string]crc16.Params{
+		"ARC":     crc16.CRC16_ARC,
+		"MODBUS":  crc16.CRC16_MODBUS,
+		"MAXIM":   crc16.CRC16_MAXIM,
+		"BUYPASS": crc16.CRC16_BUYPASS,
+	}
 
-	return strings.ToUpper(givenCRC) == calcCRCHex
+	for name, params := range variants {
+		table := crc16.MakeTable(params)
+		calcCRC := crc16.Checksum([]byte(data), table)
+		calcCRCHex := fmt.Sprintf("%04X", calcCRC)
+
+		log.Printf("CRC %s: Given=%s, Calculated=%s", name, givenCRC, calcCRCHex)
+
+		if strings.ToUpper(givenCRC) == calcCRCHex {
+			log.Printf("CRC validation passed with %s", name)
+			return true
+		}
+	}
+
+	log.Printf("CRC validation failed for all variants")
+	return false
 }
 
 func (p *P1Reader) ParseTelegram(telegram string) *MeterReading {
