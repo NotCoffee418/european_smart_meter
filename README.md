@@ -8,22 +8,21 @@ This was designed for Belgian meters but should work for other countries as well
 - Raspberry Pi 3+ (or other Linux machine)
 - [P1 Smart Meter Cable](https://webshop.cedel.nl/nl/Slimme-meter-kabel-P1-naar-USB)
 - [Activated P1 port on your smart meter](https://www.stroohm.be/en/help/using-and-accessing-the-p1-port-of-the-digital-meter-in-belgium/)
-- Docker installed (Optional)
 
 ## Installation
 
 1. [Set up Raspberry Pi](https://www.raspberrypi.com/documentation/computers/getting-started.html)
 2. Connect the cable to the P1 port on the meter and a USB port on the Raspberry Pi
 3. SSH into the Raspberry Pi or open a terminal on the Raspberry Pi
-4. [Install Docker](https://docs.docker.com/engine/install/debian/)
-5. Give user Docker access
-
+4. Disable Pi Desktop (optional, but recommended on older Pi's)  
+    When running additional smart meter related software on the Pi, it may cause memory issues if we don't.
     ```bash
-    sudo usermod -aG docker $USER
-    newgrp docker # Probably not needed
+    sudo raspi-config
+    # System Options → Boot / Auto Login → Console
+    # Exit and reboot
     ```
+5. [Install Go](https://go.dev/doc/install)
 
-6. Logout and login again to apply the changes (or close and reopen the terminal).
 7. Clone the repository to your Raspberry Pi
 
     ```bash
