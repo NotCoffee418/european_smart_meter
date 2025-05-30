@@ -145,19 +145,54 @@ func (p *P1Reader) Disconnect() {
 func (p *P1Reader) ValidateCRC(telegram string) bool {
 	parts := strings.Split(telegram, "!")
 	if len(parts) != 2 || len(parts[1]) < 4 {
-		log.Printf("CRC validation failed: invalid telegram format")
+		log.Printf("CRC validation failed: invalid telegram format, parts=%d", len(parts))
+		if len(parts) > 1 {
+			log.Printf("CRC section: '%s'", parts[1])
+		}
 		return false
 	}
 
 	data := parts[0] + "!"
 	givenCRC := parts[1][:4]
 
-	// Try the most common DSMR CRC variants
+	// Log the raw data being CRC'd
+	log.Printf("=== CRC DEBUG ===")
+	log.Printf("Data length: %d bytes", len(data))
+	log.Printf("Given CRC: %s", givenCRC)
+	log.Printf("Full telegram:")
+	log.Printf("%s", telegram)
+	log.Printf("--- Data being CRC'd ---")
+	log.Printf("%q", data)
+
+	// Show hex dump of the data
+	log.Printf("--- Hex dump of CRC data ---")
+	for i := 0; i < len(data); i += 16 {
+		end := i + 16
+		if end > len(data) {
+			end = len(data)
+		}
+		hex := ""
+		ascii := ""
+		for j := i; j < end; j++ {
+			hex += fmt.Sprintf("%02X ", data[j])
+			if data[j] >= 32 && data[j] <= 126 {
+				ascii += string(data[j])
+			} else {
+				ascii += "."
+			}
+		}
+		log.Printf("%04X: %-48s %s", i, hex, ascii)
+	}
+
+	// Try all possible CRC variants that could be used
 	variants := map[string]crc16.Params{
-		"ARC":     crc16.CRC16_ARC,
-		"MODBUS":  crc16.CRC16_MODBUS,
-		"MAXIM":   crc16.CRC16_MAXIM,
-		"BUYPASS": crc16.CRC16_BUYPASS,
+		"ARC":         crc16.CRC16_ARC,         // 0x8005, reversed
+		"MODBUS":      crc16.CRC16_MODBUS,      // 0x8005, normal
+		"MAXIM":       crc16.CRC16_MAXIM,       // 0x8005, different settings
+		"BUYPASS":     crc16.CRC16_BUYPASS,     // 0x8005, different settings
+		"CCITT_FALSE": crc16.CRC16_CCITT_FALSE, // 0x1021
+		"GENIBUS":     crc16.CRC16_GENIBUS,     // 0x1021, different settings
+		"KERMIT":      crc16.CRC16_KERMIT,      // 0x1189
 	}
 
 	for name, params := range variants {
@@ -165,15 +200,46 @@ func (p *P1Reader) ValidateCRC(telegram string) bool {
 		calcCRC := crc16.Checksum([]byte(data), table)
 		calcCRCHex := fmt.Sprintf("%04X", calcCRC)
 
-		log.Printf("CRC %s: Given=%s, Calculated=%s", name, givenCRC, calcCRCHex)
+		log.Printf("CRC %-12s: %s (match: %v)", name, calcCRCHex, strings.ToUpper(givenCRC) == calcCRCHex)
 
 		if strings.ToUpper(givenCRC) == calcCRCHex {
-			log.Printf("CRC validation passed with %s", name)
+			log.Printf("*** CRC MATCH FOUND: %s ***", name)
 			return true
 		}
 	}
 
-	log.Printf("CRC validation failed for all variants")
+	// Try without the final newline (common issue)
+	dataNoNewline := strings.TrimRight(data, "\r\n")
+	log.Printf("--- Trying without final CRLF ---")
+	log.Printf("Data without CRLF: %q", dataNoNewline[len(dataNoNewline)-10:])
+
+	for name, params := range variants {
+		table := crc16.MakeTable(params)
+		calcCRC := crc16.Checksum([]byte(dataNoNewline), table)
+		calcCRCHex := fmt.Sprintf("%04X", calcCRC)
+
+		if strings.ToUpper(givenCRC) == calcCRCHex {
+			log.Printf("*** CRC MATCH FOUND (no CRLF): %s ***", name)
+			return true
+		}
+	}
+
+	// Try with just the data part (before the !)
+	dataOnly := parts[0]
+	log.Printf("--- Trying data only (no !) ---")
+
+	for name, params := range variants {
+		table := crc16.MakeTable(params)
+		calcCRC := crc16.Checksum([]byte(dataOnly), table)
+		calcCRCHex := fmt.Sprintf("%04X", calcCRC)
+
+		if strings.ToUpper(givenCRC) == calcCRCHex {
+			log.Printf("*** CRC MATCH FOUND (data only): %s ***", name)
+			return true
+		}
+	}
+
+	log.Printf("=== END CRC DEBUG ===")
 	return false
 }
 
@@ -281,28 +347,40 @@ func (p *P1Reader) ReadTelegram() (string, error) {
 		return "", fmt.Errorf("serial port not connected")
 	}
 
-	scanner := bufio.NewScanner(p.serialPort)
 	var buffer strings.Builder
 	var inTelegram bool
+	reader := bufio.NewReader(p.serialPort)
+	lineCount := 0
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return "", err
+		}
+
+		lineCount++
+		// Only log first few lines and last few lines to avoid spam
+		if lineCount <= 3 || strings.HasPrefix(strings.TrimSpace(line), "!") {
+			log.Printf("Serial line %d: %q (len=%d)", lineCount, line, len(line))
+		}
 
 		if strings.HasPrefix(line, "/") {
 			// Start of telegram
 			buffer.Reset()
-			buffer.WriteString(line + "\n")
+			buffer.WriteString(line)
 			inTelegram = true
+			lineCount = 1
+			log.Printf("=== Telegram start detected ===")
 		} else if inTelegram {
-			buffer.WriteString(line + "\n")
-			if strings.HasPrefix(line, "!") {
+			buffer.WriteString(line)
+			if strings.HasPrefix(strings.TrimSpace(line), "!") {
 				// End of telegram
-				return buffer.String(), nil
+				telegram := buffer.String()
+				log.Printf("=== Telegram complete: %d lines, %d bytes ===", lineCount, len(telegram))
+				return telegram, nil
 			}
 		}
 	}
-
-	return "", scanner.Err()
 }
 
 func (p *P1Reader) StartReading() {
