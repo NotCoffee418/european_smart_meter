@@ -112,6 +112,8 @@ class P1Reader:
         except Exception as e:
             print(f"CRC validation error: {e}")
             return False
+
+    def parse_telegram(self, telegram: str) -> Optional[MeterReading]:
         """Parse a P1 telegram into a MeterReading"""
         try:
             # Extract timestamp from telegram
