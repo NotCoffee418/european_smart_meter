@@ -100,6 +100,14 @@ Both output the following JSON response structure:
 }
 ```
 
+
+## Uninstallation
+
+```bash
+# Interpreter API (everything else depends on this)
+curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/uninstall_interpreter.sh | sudo bash /dev/stdin
+```
+
 ## Troubleshooting
 
 ### Device not found
