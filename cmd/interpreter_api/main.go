@@ -289,14 +289,8 @@ func (p *P1Reader) BroadcastToWebSockets(reading *types.MeterReading) {
 	}
 	p.wsClientsMutex.RUnlock()
 
-	data, err := json.Marshal(reading)
-	if err != nil {
-		log.Printf("Error marshaling reading: %v", err)
-		return
-	}
-
 	for _, client := range clients {
-		if err := client.WriteMessage(websocket.TextMessage, data); err != nil {
+		if err := client.WriteMessage(websocket.TextMessage, reading.ToJsonBytes()); err != nil {
 			p.RemoveWebSocketClient(client)
 		}
 	}
@@ -385,9 +379,7 @@ func main() {
 
 		// Send current reading immediately if available
 		if reading := p1Reader.GetLatestReading(); reading != nil {
-			if data, err := json.Marshal(reading); err == nil {
-				conn.WriteMessage(websocket.TextMessage, data)
-			}
+			conn.WriteMessage(websocket.TextMessage, reading.ToJsonBytes())
 		}
 
 		// Keep connection alive

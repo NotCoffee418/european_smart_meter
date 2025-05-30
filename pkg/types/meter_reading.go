@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 type MeterReading struct {
 	Timestamp string `json:"timestamp"`
 
@@ -38,4 +40,23 @@ type MeterReading struct {
 
 	// Gas
 	GasConsumptionM3 float64 `json:"gas_consumption_m3"`
+}
+
+// To Json Bytes
+func (m *MeterReading) ToJsonBytes() []byte {
+	json, err := json.Marshal(m)
+	if err != nil {
+		return nil
+	}
+	return json
+}
+
+// From Json Bytes
+func MeterReadingFromJsonBytes(jsonData []byte) *MeterReading {
+	var meterReading MeterReading
+	err := json.Unmarshal(jsonData, &meterReading)
+	if err != nil {
+		return nil
+	}
+	return &meterReading
 }
