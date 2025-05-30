@@ -151,8 +151,8 @@ func (p *P1Reader) ValidateCRC(telegram string) bool {
 	data := parts[0] + "!"
 	givenCRC := parts[1][:4]
 
-	// CRC16 with DSMR polynomial (x^16 + x^15 + x^2 + 1)
-	table := crc16.MakeTable(crc16.CRC16_GENIBUS)
+	// Use CRC16_ARC which matches DSMR specification
+	table := crc16.MakeTable(crc16.CRC16_ARC)
 	calcCRC := crc16.Checksum([]byte(data), table)
 	calcCRCHex := fmt.Sprintf("%04X", calcCRC)
 
