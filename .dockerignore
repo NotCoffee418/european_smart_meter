@@ -22,4 +22,4 @@ coverage.xml
 *.log
 .DS_Store
 .vscode
-run_docker.sh
+debug.py

@@ -85,7 +85,7 @@ python3 main.py
 ```bash
 # Run this command from the Raspberry Pi.
 # You should see a JSON response with the latest data from the smart meter.
-curl http://localhost:9039/latest
+curl http://localhost:9039/latest | python3 -m json.tool
 ```
 
 
