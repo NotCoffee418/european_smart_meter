@@ -16,43 +16,18 @@ This was designed for Belgian meters but should work for other countries as well
 3. SSH into the Raspberry Pi or open a terminal on the Raspberry Pi
 4. Disable Pi Desktop (optional, but recommended on older Pi's)  
     When running additional smart meter related software on the Pi, it may cause memory issues if we don't.
+
     ```bash
     sudo raspi-config
     # System Options → Boot / Auto Login → Console
     # Exit and reboot
     ```
-5. [Install Go](https://go.dev/doc/install)
 
-7. Clone the repository to your Raspberry Pi
+5. Install Interpreter API
 
     ```bash
-    git clone https://github.com/NotCoffee418/belgian_smart_meter_api
-    cd belgian_smart_meter_api
+    curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_interpreter.sh | sudo bash
     ```
-
-8. **(Optional)** Confirm which port the P1 cable is connected to (probably `/dev/ttyUSB0`).
-
-   ```bash
-   # List all USB devices. If only one it will be /dev/ttyUSB0.
-   ls /dev/ttyUSB*
-
-   # Expected output:
-   # pi@raspberrypi:~ $ ls /dev/ttyUSB*
-   # /dev/ttyUSB0
-
-   # Test the connection with this command (replace /dev/ttyUSB0 with your port).
-   cat /dev/ttyUSB0 | grep "\:1\.7\.0"
-
-   # You should see your current consumption at the bottom:
-   # 1-0:1.7.0(00.342*kW)
-   
-   # If it shows nothing, you may be on the wrong device or your P1 port is not activated yet.
-   ```
-
-9. **(Optional)** Confirm the correct device in `compose.yml` (default: `/dev/ttyUSB0`)
-10. **(Optional)** Confirm the correct baudrate in `compose.yml` (default: `115200`)
-    - Older meters: `9600`
-    - Newer meters (DSMR 4.0+/ESMR 5.x+): `115200`
 
 ### Docker Compose (Recommended)
 

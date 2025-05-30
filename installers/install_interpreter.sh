@@ -9,6 +9,38 @@ fi
 
 echo "Installing European Smart Meter..."
 
+# Get configuration from user
+echo ""
+echo "Configuration:"
+
+# Auto-detect serial devices
+USB_DEVICES=$(ls /dev/ttyUSB* 2>/dev/null || true)
+USB_COUNT=$(echo "$USB_DEVICES" | grep -c "ttyUSB" 2>/dev/null || echo "0")
+
+if [ "$USB_COUNT" -eq 0 ]; then
+    echo "Warning: No /dev/ttyUSB* devices found. Make sure your smart meter is connected."
+    echo "Installation can continue, but you must ensure the smart meter will be connected to the selected device."
+    read -p "Serial device path (default: /dev/ttyUSB0): " SERIAL_DEVICE
+    SERIAL_DEVICE=${SERIAL_DEVICE:-/dev/ttyUSB0}
+elif [ "$USB_COUNT" -eq 1 ]; then
+    SERIAL_DEVICE="$USB_DEVICES"
+    echo "Found serial device: $SERIAL_DEVICE (auto-selected)"
+else
+    echo "Found multiple USB serial devices:"
+    echo "$USB_DEVICES"
+    read -p "Smart Meter Serial Device Path (default: /dev/ttyUSB0): " SERIAL_DEVICE
+    SERIAL_DEVICE=${SERIAL_DEVICE:-/dev/ttyUSB0}
+fi
+
+echo "Baudrate options:"
+echo "  9600   - Older meters"
+echo "  115200 - Newer meters (DSMR 4.0+/ESMR 5.x+)"
+read -p "Baudrate (default: 115200): " BAUDRATE
+BAUDRATE=${BAUDRATE:-115200}
+
+echo "Using device: $SERIAL_DEVICE at $BAUDRATE baud"
+echo ""
+
 # Get the actual user (not root when using sudo)
 ACTUAL_USER="${SUDO_USER:-$USER}"
 if [ "$ACTUAL_USER" = "root" ]; then
@@ -76,6 +108,8 @@ After=network.target
 Type=simple
 User=root
 ExecStart=$INSTALL_DIR/interpreter_api
+Environment=SERIAL_DEVICE=$SERIAL_DEVICE
+Environment=BAUDRATE=$BAUDRATE
 Restart=always
 RestartSec=5
 StandardOutput=journal
@@ -109,8 +143,8 @@ if command -v python3 &> /dev/null; then
         exit 1
     fi
 else
-    echo "⚠️  python3 not found - couldn't verify if the service is running. It likely is."
-    echo "Manual test: curl http://localhost:9039/latest"
+    echo "⚠️  python3 not found - couldn't test JSON response, but service is probably fine"
+    echo "Manual test: curl http://localhost:9039/latest | python3 -m json.tool"
 fi
 
 echo ""
