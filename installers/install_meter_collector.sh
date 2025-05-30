@@ -7,6 +7,14 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+echo "Interpreter API host:"
+exec < /dev/tty
+read -p "Interpreter API host (leave blank for default: localhost:9039): " INTERPRETER_API_HOST
+INTERPRETER_API_HOST=${INTERPRETER_API_HOST:-localhost:9039}
+echo "Using interpreter API host: $INTERPRETER_API_HOST"
+echo ""
+
+
 echo "Installing European Smart Meter Collector..."
 
 
@@ -75,6 +83,7 @@ Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
+Environment=INTERPRETER_API_HOST=$INTERPRETER_API_HOST
 
 [Install]
 WantedBy=multi-user.target
