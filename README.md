@@ -26,7 +26,7 @@ This was designed for Belgian meters but should work for other countries as well
 5. Install Interpreter API
 
     ```bash
-    curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_interpreter.sh | sudo bash
+    curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_interpreter.sh | sudo bash /dev/stdin
     ```
 
 ### Docker Compose (Recommended)
