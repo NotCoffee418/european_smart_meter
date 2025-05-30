@@ -19,17 +19,25 @@ This was designed for Belgian meters but should work for other countries as well
 ## Installation
 
 1. [Set up Raspberry Pi](https://www.raspberrypi.com/documentation/computers/getting-started.html)
-2. [Install Docker](https://docs.docker.com/engine/install/debian/)
-3. Connect the cable to the P1 port on the meter and a USB port on the Raspberry Pi
-4. SSH into the Raspberry Pi or open a terminal on the Raspberry Pi
-5. Clone the repository to your Raspberry Pi
+2. Connect the cable to the P1 port on the meter and a USB port on the Raspberry Pi
+3. SSH into the Raspberry Pi or open a terminal on the Raspberry Pi
+4. [Install Docker](https://docs.docker.com/engine/install/debian/)
+5. Give user Docker access
+
+    ```bash
+    sudo usermod -aG docker $USER
+    newgrp docker # Probably not needed
+    ```
+
+6. Logout and login again to apply the changes (or close and reopen the terminal).
+7. Clone the repository to your Raspberry Pi
 
     ```bash
     git clone https://github.com/NotCoffee418/belgian_smart_meter_api
     cd belgian_smart_meter_api
     ```
 
-6. **(Optional)** Confirm which port the P1 cable is connected to (probably `/dev/ttyUSB0`).
+8. **(Optional)** Confirm which port the P1 cable is connected to (probably `/dev/ttyUSB0`).
 
    ```bash
    # List all USB devices. If only one it will be /dev/ttyUSB0.
@@ -48,17 +56,17 @@ This was designed for Belgian meters but should work for other countries as well
    # If it shows nothing, you may be on the wrong device or your P1 port is not activated yet.
    ```
 
-7. **(Optional)** Confirm the correct device in `compose.yml` (default: `/dev/ttyUSB0`)
-8. **(Optional)** Confirm the correct baudrate in `compose.yml` (default: `115200`)
-   - Older meters: 9600
-   - Newer meters (DSMR 4.0+/ESMR 5.x+): 115200
+9. **(Optional)** Confirm the correct device in `compose.yml` (default: `/dev/ttyUSB0`)
+10. **(Optional)** Confirm the correct baudrate in `compose.yml` (default: `115200`)
+    - Older meters: `9600`
+    - Newer meters (DSMR 4.0+/ESMR 5.x+): `115200`
 
 ### Docker Compose (Recommended)
 
 ```bash
 git clone https://github.com/NotCoffee418/belgian_smart_meter_api
 cd belgian_smart_meter_api
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Directly (Not recommended)
