@@ -70,10 +70,11 @@ install_or_update_go() {
     fi
 }
 
-main() {
-    # Sudo check
-    if [ "$EUID" -ne 0 ]; then
-        echo "Please run as root"
-        exit 1
-    fi
-}
+
+
+
+# Sudo check
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root"
+    exit 1
+fi
