@@ -1,6 +1,10 @@
 # Smart Meter API
 
-This is a simple API to get data from the European smart meter.  
+Modular services to interact with the European smart meter designed to run on a Raspberry Pi.
+
+- Interpreter API: Read the meter and provides the values as an API.
+- Meter Collector: Get data from Interpreter API and store it in the database.
+
 This was designed for Belgian meters but should work for other countries as well.
 
 ## Requirements
@@ -26,44 +30,23 @@ This was designed for Belgian meters but should work for other countries as well
 5. Install Interpreter API
 
     ```bash
+    # Install or update the Interpreter API
     curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_interpreter.sh | sudo bash /dev/stdin
     ```
 
-### Docker Compose (Recommended)
+6. Install Meter Collector
 
-```bash
-git clone https://github.com/NotCoffee418/belgian_smart_meter_api
-cd belgian_smart_meter_api
-docker compose up -d
-```
-
-### Directly (Not recommended)
-
-```bash
-git clone https://github.com/NotCoffee418/belgian_smart_meter_api
-cd belgian_smart_meter_api
-python3 -m venv .venv
-source .venv/bin/activate
-pip3 install -r requirements.txt
-python3 main.py
-```
-
-## Test the connection
-
-```bash
-# Run this command from the Raspberry Pi.
-# You should see a JSON response with the latest data from the smart meter.
-curl http://localhost:9039/latest | python3 -m json.tool
-```
+    ```bash
+    # Install or update the Meter Collector
+    curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_meter_collector.sh | sudo bash /dev/stdin
+    ```
 
 
+## Interpreter API
+The Interpreter API reads the meter and provides the values as an API with a websocket endpoint option.  
+This service is essential for all other services to work and can be optionally run as a standalone application to work with custom software.
 
-## API Usage
-
-Additional tools for the API (still being built or available in my github if i forget to update this message)
-
-
-## Endpoints
+### Endpoints
 
 - **/latest**: Get the latest data from the smart meter
 - **/ws**: Subscribe to the websocket endpoint to get real-time data from the smart meter
@@ -106,6 +89,9 @@ Both output the following JSON response structure:
 ```bash
 # Interpreter API (everything else depends on this)
 curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/uninstall_interpreter.sh | sudo bash /dev/stdin
+
+# Meter Collector
+curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/uninstall_meter_collector.sh | sudo bash /dev/stdin
 ```
 
 ## Troubleshooting
