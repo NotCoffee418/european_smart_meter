@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter_listener"
+	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter"
 	"github.com/NotCoffee418/european_smart_meter/pkg/meterdb"
-	"github.com/NotCoffee418/european_smart_meter/pkg/types"
 )
 
 func main() {
@@ -22,11 +21,11 @@ func main() {
 	}
 
 	// Subscribe to websocket with revive
-	interpreter_listener.StartListener(host, handleMeterReading)
+	interpreter.StartListener(host, handleMeterReading)
 
 }
 
 // Handle meter reading data
-func handleMeterReading(reading *types.RawMeterReading) {
+func handleMeterReading(reading *interpreter.RawMeterReading) {
 	fmt.Println(string(reading.ToJsonBytes()))
 }

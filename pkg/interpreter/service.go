@@ -1,4 +1,4 @@
-package interpreter_listener
+package interpreter
 
 import (
 	"log"
@@ -7,12 +7,11 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/NotCoffee418/european_smart_meter/pkg/types"
 	"github.com/gorilla/websocket"
 )
 
 // Manage websocket connection and call handleMeterReading for each reading
-func StartListener(host string, funcToCall func(reading *types.RawMeterReading)) {
+func StartListener(host string, funcToCall func(reading *RawMeterReading)) {
 	const (
 		maxRetries     = 10
 		baseRetryDelay = 2 * time.Second
@@ -86,7 +85,11 @@ func StartListener(host string, funcToCall func(reading *types.RawMeterReading))
 	}
 }
 
-func handleConnection(c *websocket.Conn, interrupt chan os.Signal, funcToCall func(reading *types.RawMeterReading)) bool {
+func handleConnection(
+	c *websocket.Conn,
+	interrupt chan os.Signal,
+	funcToCall func(reading *RawMeterReading),
+) bool {
 	done := make(chan struct{})
 
 	// Set read deadline to detect dead connections
@@ -112,7 +115,7 @@ func handleConnection(c *websocket.Conn, interrupt chan os.Signal, funcToCall fu
 
 			// We only expect RawMeterReading messages
 			if messageType == websocket.TextMessage {
-				if meterReading := types.MeterReadingFromJsonBytes(message); meterReading != nil {
+				if meterReading := MeterReadingFromJsonBytes(message); meterReading != nil {
 					funcToCall(meterReading)
 				} else {
 					log.Printf("Failed to parse meter reading: %s", string(message))

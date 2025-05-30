@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NotCoffee418/european_smart_meter/pkg/types"
+	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter"
 	"github.com/gorilla/websocket"
 	"github.com/jacobsa/go-serial/serial"
 	"github.com/sigurn/crc16"
@@ -25,7 +25,7 @@ type P1Reader struct {
 	port           string
 	baudrate       uint
 	serialPort     io.ReadWriteCloser
-	latestReading  *types.RawMeterReading
+	latestReading  *interpreter.RawMeterReading
 	readingMutex   sync.RWMutex
 	wsClients      map[*websocket.Conn]bool
 	wsClientsMutex sync.RWMutex
@@ -120,13 +120,13 @@ func (p *P1Reader) ValidateCRC(telegram string) bool {
 	return strings.ToUpper(givenCRC) == calcCRCHex
 }
 
-func (p *P1Reader) ParseTelegram(telegram string) *types.RawMeterReading {
+func (p *P1Reader) ParseTelegram(telegram string) *interpreter.RawMeterReading {
 	if !p.ValidateCRC(telegram) {
 		log.Println("Invalid CRC, skipping telegram")
 		return nil
 	}
 
-	reading := &types.RawMeterReading{
+	reading := &interpreter.RawMeterReading{
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
 
@@ -275,13 +275,13 @@ func (p *P1Reader) StartReading() {
 	log.Printf("Too many consecutive errors (%d), stopping reader", maxErrors)
 }
 
-func (p *P1Reader) GetLatestReading() *types.RawMeterReading {
+func (p *P1Reader) GetLatestReading() *interpreter.RawMeterReading {
 	p.readingMutex.RLock()
 	defer p.readingMutex.RUnlock()
 	return p.latestReading
 }
 
-func (p *P1Reader) BroadcastToWebSockets(reading *types.RawMeterReading) {
+func (p *P1Reader) BroadcastToWebSockets(reading *interpreter.RawMeterReading) {
 	p.wsClientsMutex.RLock()
 	clients := make([]*websocket.Conn, 0, len(p.wsClients))
 	for client := range p.wsClients {

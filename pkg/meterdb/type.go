@@ -1,4 +1,4 @@
-package types
+package meterdb
 
 type MeterDbPowerReading struct {
 	Timestamp                 uint64                  `db:"timestamp"`
@@ -9,8 +9,8 @@ type MeterDbPowerReading struct {
 }
 
 type MeterDbGasReading struct {
-	Timestamp     uint64 `db:"timestamp"`
-	CubicMeter    uint32 `db:"cubic_meter"`
+	Timestamp  uint64 `db:"timestamp"`
+	CubicMeter uint32 `db:"cubic_meter"`
 }
 
 type MeterDbPowerReadingType uint8

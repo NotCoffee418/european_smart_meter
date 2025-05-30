@@ -1,4 +1,4 @@
-package types
+package interpreter
 
 import "encoding/json"
 
