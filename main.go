@@ -263,28 +263,29 @@ func (p *P1Reader) ReadTelegram() (string, error) {
 		return "", fmt.Errorf("serial port not connected")
 	}
 
-	scanner := bufio.NewScanner(p.serialPort)
 	var buffer strings.Builder
 	var inTelegram bool
+	reader := bufio.NewReader(p.serialPort)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return "", err
+		}
 
 		if strings.HasPrefix(line, "/") {
 			// Start of telegram
 			buffer.Reset()
-			buffer.WriteString(line + "\n")
+			buffer.WriteString(line)
 			inTelegram = true
 		} else if inTelegram {
-			buffer.WriteString(line + "\n")
-			if strings.HasPrefix(line, "!") {
+			buffer.WriteString(line)
+			if strings.HasPrefix(strings.TrimSpace(line), "!") {
 				// End of telegram
 				return buffer.String(), nil
 			}
 		}
 	}
-
-	return "", scanner.Err()
 }
 
 func (p *P1Reader) StartReading() {
