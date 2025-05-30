@@ -3,12 +3,6 @@
 This is a simple API to get data from the European smart meter.  
 This was designed for Belgian meters but should work for other countries as well.
 
-
-## Endpoints
-
-- **/latest**: Get the latest data from the smart meter
-- **/ws**: Subscribe to the websocket endpoint to get real-time data from the smart meter
-
 ## Requirements
 
 - Raspberry Pi 3+ (or other Linux machine)
@@ -95,10 +89,41 @@ curl http://localhost:9039/latest | python3 -m json.tool
 Additional tools for the API (still being built or available in my github if i forget to update this message)
 
 
-### JSON Response Example
+## Endpoints
+
+- **/latest**: Get the latest data from the smart meter
+- **/ws**: Subscribe to the websocket endpoint to get real-time data from the smart meter
+
+Both output the following JSON response structure:
 
 ```json
-
+{
+  "timestamp": "2025-05-30T15:52:07", // Local Time
+  "current_consumption_kw": 0.150, // Combined Consumption (L1+L2+L3)
+  "current_production_kw": 0.0,
+  "l1_consumption_kw": 0.015,
+  "l2_consumption_kw": 0.0, // L2 and L3 is for 3 phase meters (industrial)
+  "l3_consumption_kw": 0.0, // L2 and L3 is for 3 phase meters (industrial)
+  "l1_production_kw": 0.0,
+  "l2_production_kw": 0.0,
+  "l3_production_kw": 0.0,
+  "total_consumption_day_kwh": 9999.999,
+  "total_consumption_night_kwh": 9999.99,
+  "total_production_day_kwh": 9999.99,
+  "total_production_night_kwh": 9999.99,
+  "current_tariff": 1, // 1=day, 2=night
+  "l1_voltage_v": 237.8,
+  "l2_voltage_v": 0.0,
+  "l3_voltage_v": 0.0,
+  "l1_current_a": 2.28,
+  "l2_current_a": 0.0,
+  "l3_current_a": 0.0,
+  "switch_electricity": 1, // 1=on, 0=off - Physical switch on the meter
+  "switch_gas": 1, // 1=on, 0=off - Physical switch on the meter
+  "meter_serial_electricity": "XXXXXXXXX",
+  "meter_serial_gas": "XXXXXXXXX",
+  "gas_consumption_m3": 9999.99 // Updated every 10 minutes
+}
 ```
 
 ## Troubleshooting
