@@ -101,7 +101,7 @@ Both output the following JSON response structure:
   "timestamp": "2025-05-30T15:52:07", // Local Time
   "current_consumption_kw": 0.150, // Combined Consumption (L1+L2+L3)
   "current_production_kw": 0.0,
-  "l1_consumption_kw": 0.015,
+  "l1_consumption_kw": 0.150,
   "l2_consumption_kw": 0.0, // L2 and L3 is for 3 phase meters (industrial)
   "l3_consumption_kw": 0.0, // L2 and L3 is for 3 phase meters (industrial)
   "l1_production_kw": 0.0,
