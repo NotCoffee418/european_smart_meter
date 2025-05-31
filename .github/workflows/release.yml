@@ -28,19 +28,18 @@ jobs:
         run: |
           # Create dist directory
           mkdir -p dist
-          
-          # Build interpreter_api
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/interpreter_api-linux-amd64 cmd/interpreter_api/main.go
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/interpreter_api-linux-arm64 cmd/interpreter_api/main.go
-          GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o dist/interpreter_api-linux-arm6 cmd/interpreter_api/main.go
-          GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o dist/interpreter_api-linux-arm7 cmd/interpreter_api/main.go
 
-          # Build meter_collector
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/meter_collector-linux-amd64 cmd/meter_collector/main.go
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/meter_collector-linux-arm64 cmd/meter_collector/main.go
-          GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o dist/meter_collector-linux-arm6 cmd/meter_collector/main.go
-          GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o dist/meter_collector-linux-arm7 cmd/meter_collector/main.go
-
+          build_for_target() {
+            local target=$1
+            echo "Building ${target}"
+            GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/${target}-linux-amd64 cmd/${target}/main.go
+            GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/${target}-linux-arm64 cmd/${target}/main.go
+            GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o dist/${target}-linux-arm6 cmd/${target}/main.go
+            GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o dist/${target}-linux-arm7 cmd/${target}/main.go
+          }
+                
+          build_for_target interpreter_api
+          build_for_target meter_collector
           
       - name: Create checksums
         run: |
@@ -56,6 +55,7 @@ jobs:
           prerelease: false
           files: |
             dist/interpreter_api-*
+            dist/meter_collector-*
             dist/checksums.txt
           body: |
             ## What's Changed

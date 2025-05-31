@@ -3,6 +3,7 @@ module github.com/NotCoffee418/european_smart_meter
 go 1.24.2
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/NotCoffee418/dbmigrator v0.2.4
 	github.com/gorilla/websocket v1.5.3
 	github.com/jacobsa/go-serial v0.0.0-20180131005756-15cf729a72d4
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
