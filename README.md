@@ -113,3 +113,10 @@ You can check if you're receiving data by running the following command:
 python3 -m serial.tools.miniterm /dev/ttyUSB0 115200 --xonxoff
 ```
 
+## Unsorted info (todo)
+### Paths
+- /etc/european_smart_meter/interpreter_api.toml
+- /etc/european_smart_meter/meter_collector.toml
+- /var/lib/european_smart_meter/esm-meter.db
+- /usr/bin/european_smart_meter/interpreter_api
+- /usr/bin/european_smart_meter/meter_collector

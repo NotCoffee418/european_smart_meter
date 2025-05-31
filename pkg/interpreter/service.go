@@ -11,7 +11,7 @@ import (
 )
 
 // Manage websocket connection and call handleMeterReading for each reading
-func StartListener(host string, funcToCall func(reading *RawMeterReading)) {
+func StartListener(host string, tls bool, funcToCall func(reading *RawMeterReading)) {
 	const (
 		maxRetries     = 10
 		baseRetryDelay = 2 * time.Second
@@ -19,7 +19,11 @@ func StartListener(host string, funcToCall func(reading *RawMeterReading)) {
 	)
 
 	// WebSocket server URL
-	u := url.URL{Scheme: "ws", Host: host, Path: "/ws"}
+	scheme := "ws"
+	if tls {
+		scheme = "wss"
+	}
+	u := url.URL{Scheme: scheme, Host: host, Path: "/ws"}
 
 	// Channel to handle interrupt signal
 	interrupt := make(chan os.Signal, 1)

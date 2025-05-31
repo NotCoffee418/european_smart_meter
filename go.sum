@@ -1,3 +1,5 @@
+github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
+github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/NotCoffee418/dbmigrator v0.2.4 h1:YcFKAv91Vxka7nE2JQ6Sy0uTUmJCb5IL/cRgYh72AeA=
 github.com/NotCoffee418/dbmigrator v0.2.4/go.mod h1:F+7TGJjJMSpW5Y3u8zaV20wB9u7yu4ddAk0hHWaLeJM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

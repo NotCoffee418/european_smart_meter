@@ -32,3 +32,7 @@ func GetMeterDbPath() string {
 func GetDataDir() string {
 	return "/var/lib/european_smart_meter"
 }
+
+func GetConfigDir() string {
+	return "/etc/european_smart_meter"
+}

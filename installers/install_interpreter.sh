@@ -55,7 +55,9 @@ usermod -a -G tty "$ACTUAL_USER"
 
 # Create installation directory
 INSTALL_DIR="/usr/bin/european_smart_meter"
+CONFIG_DIR="/etc/european_smart_meter"
 mkdir -p "$INSTALL_DIR"
+mkdir -p "$CONFIG_DIR"
 
 # Detect architecture
 ARCH=$(uname -m)
@@ -103,6 +105,21 @@ chmod +x "$INSTALL_DIR/interpreter_api"
 
 echo "Binary installed to $INSTALL_DIR/interpreter_api"
 
+# Create config file if it doesn't exist
+if [ ! -f "$CONFIG_DIR/interpreter_api.toml" ]; then
+CONFIG_FILE="$CONFIG_DIR/interpreter_api.toml"
+cat > "$CONFIG_FILE" << EOF
+# See README.md for more info on the config file
+serial_device = "$SERIAL_DEVICE"
+baudrate = $BAUDRATE
+listen_address = "0.0.0.0"
+listen_port = 9039
+EOF
+fi
+
+echo "Created config file at $CONFIG_FILE"
+
+
 # Create systemd service
 SERVICE_FILE="/etc/systemd/system/esm-interpreter-api.service"
 cat > "$SERVICE_FILE" << EOF
@@ -114,8 +131,6 @@ After=network.target
 Type=simple
 User=root
 ExecStart=$INSTALL_DIR/interpreter_api
-Environment=SERIAL_DEVICE=$SERIAL_DEVICE
-Environment=BAUDRATE=$BAUDRATE
 Restart=always
 RestartSec=5
 StandardOutput=journal
@@ -146,6 +161,7 @@ if command -v python3 &> /dev/null; then
         echo "❌ Service test failed. Check status with:"
         echo "systemctl status esm-interpreter-api"
         echo "journalctl -u esm-interpreter-api -f"
+        echo "You may need to update the config file at /etc/european_smart_meter/interpreter_api.toml"
         exit 1
     fi
 else

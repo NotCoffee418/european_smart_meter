@@ -5,9 +5,9 @@ package main
 import (
 	"database/sql"
 	"log"
-	"os"
 	"time"
 
+	"github.com/NotCoffee418/european_smart_meter/pkg/config"
 	"github.com/NotCoffee418/european_smart_meter/pkg/esmutils"
 	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter"
 	"github.com/NotCoffee418/european_smart_meter/pkg/meterdb"
@@ -27,14 +27,17 @@ const (
 )
 
 func main() {
+	// Load config
+	if err := config.LoadMeterCollectorConfig(); err != nil {
+		log.Fatalf("Failed to load meter collector config: %v", err)
+	}
+
 	// Initialize database
 	meterdb.InitializeDatabase()
 
 	// Set the host:port from env var INTERPRETER_API_HOST
-	host := os.Getenv("INTERPRETER_API_HOST")
-	if host == "" {
-		host = "raspberrypi.local:9039"
-	}
+	host := config.ActiveMeterCollectorConfig.InterpreterAPIHost
+	tls := config.ActiveMeterCollectorConfig.TLSEnabled
 
 	// We only need total power on fresh start because:
 	// Gas: Rarely changes regadless but still inserts every 10 minutes
@@ -43,7 +46,7 @@ func main() {
 	loadLastTotalPowerReadings()
 
 	// Subscribe to websocket with revive
-	interpreter.StartListener(host, handleMeterReading)
+	interpreter.StartListener(host, tls, handleMeterReading)
 }
 
 // Handle meter reading data

@@ -8,13 +8,13 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/NotCoffee418/european_smart_meter/pkg/config"
 	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter"
 	"github.com/gorilla/websocket"
 	"github.com/jacobsa/go-serial/serial"
@@ -318,22 +318,15 @@ var upgrader = websocket.Upgrader{
 var p1Reader *P1Reader
 
 func main() {
-	port := os.Getenv("P1_PORT")
-	if port == "" {
-		port = "/dev/ttyUSB0"
+	// Load config
+	if err := config.LoadInterpreterAPIConfig(); err != nil {
+		log.Fatalf("Failed to load interpreter API config: %v", err)
 	}
 
-	baudrateStr := os.Getenv("P1_BAUDRATE")
-	if baudrateStr == "" {
-		baudrateStr = "115200"
-	}
-
-	baudrate, err := strconv.ParseUint(baudrateStr, 10, 32)
-	if err != nil {
-		log.Fatalf("Invalid baudrate: %v", err)
-	}
-
-	p1Reader = NewP1Reader(port, uint(baudrate))
+	p1Reader = NewP1Reader(
+		config.ActiveInterpreterAPIConfig.SerialDevice,
+		config.ActiveInterpreterAPIConfig.Baudrate,
+	)
 
 	// Try to connect to P1 port
 	if err := p1Reader.Connect(); err != nil {
@@ -392,6 +385,8 @@ func main() {
 		}
 	})
 
-	log.Println("Starting Belgian Smart Meter API on :9039")
-	log.Fatal(http.ListenAndServe(":9039", nil))
+	listener := fmt.Sprintf("%s:%d", config.ActiveInterpreterAPIConfig.ListenAddress, config.ActiveInterpreterAPIConfig.ListenPort)
+
+	log.Printf("Starting European Smart Meter Interpreter API on %s", listener)
+	log.Fatal(http.ListenAndServe(listener, nil))
 }

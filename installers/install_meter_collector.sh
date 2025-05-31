@@ -7,20 +7,15 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "Interpreter API host:"
-exec < /dev/tty
-read -p "Interpreter API host (leave blank for default: localhost:9039): " INTERPRETER_API_HOST
-INTERPRETER_API_HOST=${INTERPRETER_API_HOST:-localhost:9039}
-echo "Using interpreter API host: $INTERPRETER_API_HOST"
-echo ""
-
 
 echo "Installing European Smart Meter Collector..."
 
 
 # Create installation directory
 INSTALL_DIR="/usr/bin/european_smart_meter"
+CONFIG_DIR="/etc/european_smart_meter"
 mkdir -p "$INSTALL_DIR"
+mkdir -p "$CONFIG_DIR"
 
 # Detect architecture
 ARCH=$(uname -m)
@@ -68,6 +63,20 @@ chmod +x "$INSTALL_DIR/meter_collector"
 
 echo "Binary installed to $INSTALL_DIR/meter_collector"
 
+# Create config file if it doesn't exist
+if [ ! -f "$CONFIG_DIR/meter_collector.toml" ]; then
+CONFIG_FILE="$CONFIG_DIR/meter_collector.toml"
+cat > "$CONFIG_FILE" << EOF
+interpreter_api_host = "localhost:9039"
+tls_enabled = false
+EOF
+fi
+echo "Created config file at $CONFIG_FILE"
+
+# Create directory for database if it doesn't exist
+mkdir -p "/var/lib/european_smart_meter"
+
+
 # Create systemd service
 SERVICE_FILE="/etc/systemd/system/esm-meter-collector.service"
 cat > "$SERVICE_FILE" << EOF
@@ -83,7 +92,6 @@ Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-Environment=INTERPRETER_API_HOST=$INTERPRETER_API_HOST
 
 [Install]
 WantedBy=multi-user.target
