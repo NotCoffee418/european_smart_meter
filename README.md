@@ -48,6 +48,9 @@ This was designed for Belgian meters but should work for other countries as well
     sudo curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/refs/heads/main/installers/autoupdater.sh | sudo bash /dev/stdin
     ```
 
+## Updating
+
+Run the install scripts again to update the services. Configs remain intact.
 
 ## Interpreter API
 The Interpreter API reads the meter and provides the values as an API with a websocket endpoint option.  

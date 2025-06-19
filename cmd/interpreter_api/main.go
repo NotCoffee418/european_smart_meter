@@ -1,3 +1,4 @@
+// Interpreter API is responsible for reading the P1 port and broadcasting the readings.
 package main
 
 import (
