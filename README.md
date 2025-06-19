@@ -31,14 +31,21 @@ This was designed for Belgian meters but should work for other countries as well
 
     ```bash
     # Install or update the Interpreter API
-    curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_interpreter.sh | sudo bash /dev/stdin
+    sudo curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_interpreter.sh | sudo bash /dev/stdin
     ```
 
 6. Install Meter Collector
 
     ```bash
     # Install or update the Meter Collector
-    curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_meter_collector.sh | sudo bash /dev/stdin
+    sudo curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/main/installers/install_meter_collector.sh | sudo bash /dev/stdin
+    ```
+
+7. Set up Auto-Upgrading and install Grafana
+
+    ```bash
+    # Install or update the Auto-Updater
+    sudo curl -sSL https://raw.githubusercontent.com/NotCoffee418/european_smart_meter/refs/heads/main/installers/autoupdater.sh | sudo bash /dev/stdin
     ```
 
 

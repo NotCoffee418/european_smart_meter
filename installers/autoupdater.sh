@@ -2,9 +2,9 @@
 set -e
 
 # Check if running as root
-if [[ $EUID -eq 0 ]]; then
-   echo "Error: This script should not be run as root. Use sudo when needed." >&2
-   exit 1
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root"
+    exit 1
 fi
 
 # Check if sudo is available
