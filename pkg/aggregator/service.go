@@ -277,7 +277,7 @@ func snapshotTotalGasHourly(hourStart int64) error {
 func snapshotTotalPowerHourly(hourStart int64) error {
 	db := meterdb.GetDB()
 	hourEnd := getHourEnd(hourStart)
-	
+
 	// For power, we look 24 hours before the end of the timeframe
 	lookbackStart := hourEnd - (24 * 3600)
 
@@ -328,7 +328,7 @@ func snapshotTotalPowerHourly(hourStart int64) error {
 // cleanupOldData removes raw data older than 3 months if we have aggregated it
 func cleanupOldData() error {
 	db := meterdb.GetDB()
-	
+
 	// Calculate the cutoff timestamp (3 months ago)
 	threeMonthsAgo := time.Now().UTC().AddDate(0, -3, 0)
 	cutoffTimestamp := threeMonthsAgo.Unix()
@@ -381,9 +381,9 @@ func AggregateAndCleanup() error {
 	// Aggregate the previous hour (current hour is still ongoing)
 	previousHour := now.Add(-time.Hour)
 	hourStart := roundToHourStart(previousHour)
-	
+
 	log.Printf("Aggregating data for hour starting at %s", time.Unix(hourStart, 0).Format(time.RFC3339))
-	
+
 	if err := aggregateLivePowerHourly(hourStart); err != nil {
 		log.Printf("Error aggregating hourly live power: %v", err)
 		return err
@@ -403,9 +403,9 @@ func AggregateAndCleanup() error {
 	if now.Hour() == 0 {
 		previousDay := now.AddDate(0, 0, -1)
 		dayStart := roundToDayStart(previousDay)
-		
+
 		log.Printf("Aggregating data for day starting at %s", time.Unix(dayStart, 0).Format(time.RFC3339))
-		
+
 		if err := aggregateLivePowerDaily(dayStart); err != nil {
 			log.Printf("Error aggregating daily live power: %v", err)
 			return err
@@ -416,9 +416,9 @@ func AggregateAndCleanup() error {
 	if now.Hour() == 0 && now.Day() == 1 {
 		previousMonth := now.AddDate(0, -1, 0)
 		monthStart := roundToMonthStart(previousMonth)
-		
+
 		log.Printf("Aggregating data for month starting at %s", time.Unix(monthStart, 0).Format(time.RFC3339))
-		
+
 		if err := aggregateLivePowerMonthly(monthStart); err != nil {
 			log.Printf("Error aggregating monthly live power: %v", err)
 			return err
