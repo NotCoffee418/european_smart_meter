@@ -432,18 +432,19 @@ func cleanupOldData() error {
 
 	// Check if we have aggregated data up to the cutoff point
 	// We check the last hourly aggregate to see if we've aggregated recent enough data
-	var lastAggregateHour int64
+	var lastAggregateHour sql.NullInt64
 	err := db.QueryRow("SELECT MAX(hour_start) FROM aggregate_live_power_hourly").Scan(&lastAggregateHour)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// No aggregates yet, don't clean up
-			return nil
-		}
 		return err
 	}
 
+	// If no aggregates exist yet, don't clean up
+	if !lastAggregateHour.Valid {
+		return nil
+	}
+
 	// Only clean up if we have aggregated data up to the cutoff point
-	if lastAggregateHour < cutoffTimestamp {
+	if lastAggregateHour.Int64 < cutoffTimestamp {
 		// We haven't aggregated enough data yet, don't clean up
 		return nil
 	}
