@@ -2,10 +2,17 @@ package aggregator
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"time"
 
 	"github.com/NotCoffee418/european_smart_meter/pkg/meterdb"
+)
+
+var (
+	ErrTimeframeNotCompleted = errors.New("timeframe is not yet completed")
+	ErrAggregateExists       = errors.New("aggregate already exists for this timeframe")
+	ErrSnapshotExists        = errors.New("snapshot already exists for this timeframe")
 )
 
 // roundToHourStart returns the Unix timestamp of the start of the hour for the given time
@@ -42,6 +49,24 @@ func getMonthEnd(monthStart int64) int64 {
 // aggregateLivePowerHourly aggregates live power readings for a specific hour
 func aggregateLivePowerHourly(hourStart int64) error {
 	db := meterdb.GetDB()
+	now := time.Now().UTC()
+	currentHourStart := roundToHourStart(now)
+
+	// Check if trying to aggregate current or future hour
+	if hourStart >= currentHourStart {
+		return ErrTimeframeNotCompleted
+	}
+
+	// Check if aggregate already exists
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM aggregate_live_power_hourly WHERE hour_start = ?)", hourStart).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrAggregateExists
+	}
+
 	hourEnd := getHourEnd(hourStart)
 
 	// Query to calculate averages grouped by reading_type
@@ -107,6 +132,24 @@ func aggregateLivePowerHourly(hourStart int64) error {
 // aggregateLivePowerDaily aggregates live power readings for a specific day
 func aggregateLivePowerDaily(dayStart int64) error {
 	db := meterdb.GetDB()
+	now := time.Now().UTC()
+	currentDayStart := roundToDayStart(now)
+
+	// Check if trying to aggregate current or future day
+	if dayStart >= currentDayStart {
+		return ErrTimeframeNotCompleted
+	}
+
+	// Check if aggregate already exists
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM aggregate_live_power_daily WHERE day_start = ?)", dayStart).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrAggregateExists
+	}
+
 	dayEnd := getDayEnd(dayStart)
 
 	// Query to calculate averages grouped by reading_type
@@ -172,6 +215,24 @@ func aggregateLivePowerDaily(dayStart int64) error {
 // aggregateLivePowerMonthly aggregates live power readings for a specific month
 func aggregateLivePowerMonthly(monthStart int64) error {
 	db := meterdb.GetDB()
+	now := time.Now().UTC()
+	currentMonthStart := roundToMonthStart(now)
+
+	// Check if trying to aggregate current or future month
+	if monthStart >= currentMonthStart {
+		return ErrTimeframeNotCompleted
+	}
+
+	// Check if aggregate already exists
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM aggregate_live_power_monthly WHERE month_start = ?)", monthStart).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrAggregateExists
+	}
+
 	monthEnd := getMonthEnd(monthStart)
 
 	// Query to calculate averages grouped by reading_type
@@ -241,6 +302,24 @@ func aggregateLivePowerMonthly(monthStart int64) error {
 // snapshotTotalGasHourly creates a snapshot of gas readings for a specific hour
 func snapshotTotalGasHourly(hourStart int64) error {
 	db := meterdb.GetDB()
+	now := time.Now().UTC()
+	currentHourStart := roundToHourStart(now)
+
+	// Check if trying to snapshot current or future hour
+	if hourStart >= currentHourStart {
+		return ErrTimeframeNotCompleted
+	}
+
+	// Check if snapshot already exists
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM snapshot_total_gas_hourly WHERE timestamp = ?)", hourStart).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrSnapshotExists
+	}
+
 	hourEnd := getHourEnd(hourStart)
 
 	// Get the last known reading within the timespan
@@ -253,7 +332,7 @@ func snapshotTotalGasHourly(hourStart int64) error {
 	`
 
 	var dm3Standing uint32
-	err := db.QueryRow(query, hourStart, hourEnd).Scan(&dm3Standing)
+	err = db.QueryRow(query, hourStart, hourEnd).Scan(&dm3Standing)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// No entry within timeframe, that's okay
@@ -276,6 +355,24 @@ func snapshotTotalGasHourly(hourStart int64) error {
 // snapshotTotalPowerHourly creates a snapshot of power readings for a specific hour
 func snapshotTotalPowerHourly(hourStart int64) error {
 	db := meterdb.GetDB()
+	now := time.Now().UTC()
+	currentHourStart := roundToHourStart(now)
+
+	// Check if trying to snapshot current or future hour
+	if hourStart >= currentHourStart {
+		return ErrTimeframeNotCompleted
+	}
+
+	// Check if snapshot already exists
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM snapshot_total_power_hourly WHERE timestamp = ?)", hourStart).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrSnapshotExists
+	}
+
 	hourEnd := getHourEnd(hourStart)
 
 	// For power, we look 24 hours before the end of the timeframe
@@ -321,7 +418,7 @@ func snapshotTotalPowerHourly(hourStart int64) error {
 		VALUES (?, ?, ?, ?, ?)
 	`
 
-	_, err := db.Exec(insertQuery, hourStart, consumptionDayStanding, consumptionNightStanding, productionDayStanding, productionNightStanding)
+	_, err = db.Exec(insertQuery, hourStart, consumptionDayStanding, consumptionNightStanding, productionDayStanding, productionNightStanding)
 	return err
 }
 
@@ -385,18 +482,27 @@ func AggregateAndCleanup() error {
 	log.Printf("Aggregating data for hour starting at %s", time.Unix(hourStart, 0).Format(time.RFC3339))
 
 	if err := aggregateLivePowerHourly(hourStart); err != nil {
-		log.Printf("Error aggregating hourly live power: %v", err)
-		return err
+		if err != ErrAggregateExists {
+			log.Printf("Error aggregating hourly live power: %v", err)
+			return err
+		}
+		log.Printf("Hourly aggregate already exists for %s, skipping", time.Unix(hourStart, 0).Format(time.RFC3339))
 	}
 
 	if err := snapshotTotalGasHourly(hourStart); err != nil {
-		log.Printf("Error creating gas snapshot: %v", err)
-		return err
+		if err != ErrSnapshotExists {
+			log.Printf("Error creating gas snapshot: %v", err)
+			return err
+		}
+		log.Printf("Gas snapshot already exists for %s, skipping", time.Unix(hourStart, 0).Format(time.RFC3339))
 	}
 
 	if err := snapshotTotalPowerHourly(hourStart); err != nil {
-		log.Printf("Error creating power snapshot: %v", err)
-		return err
+		if err != ErrSnapshotExists {
+			log.Printf("Error creating power snapshot: %v", err)
+			return err
+		}
+		log.Printf("Power snapshot already exists for %s, skipping", time.Unix(hourStart, 0).Format(time.RFC3339))
 	}
 
 	// Aggregate the previous day if it's a new day
@@ -407,8 +513,11 @@ func AggregateAndCleanup() error {
 		log.Printf("Aggregating data for day starting at %s", time.Unix(dayStart, 0).Format(time.RFC3339))
 
 		if err := aggregateLivePowerDaily(dayStart); err != nil {
-			log.Printf("Error aggregating daily live power: %v", err)
-			return err
+			if err != ErrAggregateExists {
+				log.Printf("Error aggregating daily live power: %v", err)
+				return err
+			}
+			log.Printf("Daily aggregate already exists for %s, skipping", time.Unix(dayStart, 0).Format(time.RFC3339))
 		}
 	}
 
@@ -420,8 +529,11 @@ func AggregateAndCleanup() error {
 		log.Printf("Aggregating data for month starting at %s", time.Unix(monthStart, 0).Format(time.RFC3339))
 
 		if err := aggregateLivePowerMonthly(monthStart); err != nil {
-			log.Printf("Error aggregating monthly live power: %v", err)
-			return err
+			if err != ErrAggregateExists {
+				log.Printf("Error aggregating monthly live power: %v", err)
+				return err
+			}
+			log.Printf("Monthly aggregate already exists for %s, skipping", time.Unix(monthStart, 0).Format(time.RFC3339))
 		}
 	}
 
