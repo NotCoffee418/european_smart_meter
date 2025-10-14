@@ -475,67 +475,21 @@ func cleanupOldData() error {
 // This is the main function to call for data aggregation
 func AggregateAndCleanup() error {
 	now := time.Now().UTC()
+	db := meterdb.GetDB()
 
-	// Aggregate the previous hour (current hour is still ongoing)
-	previousHour := now.Add(-time.Hour)
-	hourStart := roundToHourStart(previousHour)
-
-	log.Printf("Aggregating data for hour starting at %s", time.Unix(hourStart, 0).Format(time.RFC3339))
-
-	if err := aggregateLivePowerHourly(hourStart); err != nil {
-		if err != ErrAggregateExists {
-			log.Printf("Error aggregating hourly live power: %v", err)
-			return err
-		}
-		log.Printf("Hourly aggregate already exists for %s, skipping", time.Unix(hourStart, 0).Format(time.RFC3339))
+	// Process hourly aggregates - backfill if needed
+	if err := processHourlyAggregates(db, now); err != nil {
+		return err
 	}
 
-	if err := snapshotTotalGasHourly(hourStart); err != nil {
-		if err != ErrSnapshotExists {
-			log.Printf("Error creating gas snapshot: %v", err)
-			return err
-		}
-		log.Printf("Gas snapshot already exists for %s, skipping", time.Unix(hourStart, 0).Format(time.RFC3339))
+	// Process daily aggregates - backfill if needed
+	if err := processDailyAggregates(db, now); err != nil {
+		return err
 	}
 
-	if err := snapshotTotalPowerHourly(hourStart); err != nil {
-		if err != ErrSnapshotExists {
-			log.Printf("Error creating power snapshot: %v", err)
-			return err
-		}
-		log.Printf("Power snapshot already exists for %s, skipping", time.Unix(hourStart, 0).Format(time.RFC3339))
-	}
-
-	// Aggregate the previous day if it's a new day
-	if now.Hour() == 0 {
-		previousDay := now.AddDate(0, 0, -1)
-		dayStart := roundToDayStart(previousDay)
-
-		log.Printf("Aggregating data for day starting at %s", time.Unix(dayStart, 0).Format(time.RFC3339))
-
-		if err := aggregateLivePowerDaily(dayStart); err != nil {
-			if err != ErrAggregateExists {
-				log.Printf("Error aggregating daily live power: %v", err)
-				return err
-			}
-			log.Printf("Daily aggregate already exists for %s, skipping", time.Unix(dayStart, 0).Format(time.RFC3339))
-		}
-	}
-
-	// Aggregate the previous month if it's a new month
-	if now.Hour() == 0 && now.Day() == 1 {
-		previousMonth := now.AddDate(0, -1, 0)
-		monthStart := roundToMonthStart(previousMonth)
-
-		log.Printf("Aggregating data for month starting at %s", time.Unix(monthStart, 0).Format(time.RFC3339))
-
-		if err := aggregateLivePowerMonthly(monthStart); err != nil {
-			if err != ErrAggregateExists {
-				log.Printf("Error aggregating monthly live power: %v", err)
-				return err
-			}
-			log.Printf("Monthly aggregate already exists for %s, skipping", time.Unix(monthStart, 0).Format(time.RFC3339))
-		}
+	// Process monthly aggregates - backfill if needed
+	if err := processMonthlyAggregates(db, now); err != nil {
+		return err
 	}
 
 	// Run cleanup
@@ -545,5 +499,194 @@ func AggregateAndCleanup() error {
 	}
 
 	log.Println("Aggregation and cleanup completed successfully")
+	return nil
+}
+
+// processHourlyAggregates creates hourly aggregates and snapshots, backfilling from earliest data if needed
+func processHourlyAggregates(db *sql.DB, now time.Time) error {
+	currentHourStart := roundToHourStart(now)
+
+	// Find the last hourly aggregate
+	var lastAggregateHour sql.NullInt64
+	err := db.QueryRow("SELECT MAX(hour_start) FROM aggregate_live_power_hourly").Scan(&lastAggregateHour)
+	if err != nil {
+		return err
+	}
+
+	var startHour int64
+	if !lastAggregateHour.Valid {
+		// No aggregates exist yet, find earliest data point
+		var earliestReading sql.NullInt64
+		err := db.QueryRow("SELECT MIN(timestamp) FROM live_power_readings").Scan(&earliestReading)
+		if err != nil {
+			return err
+		}
+
+		if !earliestReading.Valid {
+			// No data to aggregate
+			log.Println("No live power readings found, skipping hourly aggregation")
+			return nil
+		}
+
+		startHour = roundToHourStart(time.Unix(earliestReading.Int64, 0))
+		log.Printf("Starting hourly aggregation from earliest data: %s", time.Unix(startHour, 0).Format(time.RFC3339))
+	} else {
+		// Start from the next hour after the last aggregate
+		startHour = lastAggregateHour.Int64 + 3600
+	}
+
+	// Aggregate all hours from startHour up to (but not including) current hour
+	hoursProcessed := 0
+	for hourStart := startHour; hourStart < currentHourStart; hourStart += 3600 {
+		if err := aggregateLivePowerHourly(hourStart); err != nil {
+			if err == ErrAggregateExists {
+				continue // Skip if already exists
+			}
+			if err == ErrTimeframeNotCompleted {
+				break // Stop if we hit current timeframe
+			}
+			log.Printf("Error aggregating hourly live power for %s: %v", time.Unix(hourStart, 0).Format(time.RFC3339), err)
+			return err
+		}
+
+		if err := snapshotTotalGasHourly(hourStart); err != nil {
+			if err != ErrSnapshotExists {
+				log.Printf("Error creating gas snapshot for %s: %v", time.Unix(hourStart, 0).Format(time.RFC3339), err)
+				// Continue even if snapshot fails - it's not critical
+			}
+		}
+
+		if err := snapshotTotalPowerHourly(hourStart); err != nil {
+			if err != ErrSnapshotExists {
+				log.Printf("Error creating power snapshot for %s: %v", time.Unix(hourStart, 0).Format(time.RFC3339), err)
+				// Continue even if snapshot fails - it's not critical
+			}
+		}
+
+		hoursProcessed++
+	}
+
+	if hoursProcessed > 0 {
+		log.Printf("Processed %d hourly aggregates/snapshots", hoursProcessed)
+	}
+
+	return nil
+}
+
+// processDailyAggregates creates daily aggregates, backfilling from earliest data if needed
+func processDailyAggregates(db *sql.DB, now time.Time) error {
+	currentDayStart := roundToDayStart(now)
+
+	// Find the last daily aggregate
+	var lastAggregateDay sql.NullInt64
+	err := db.QueryRow("SELECT MAX(day_start) FROM aggregate_live_power_daily").Scan(&lastAggregateDay)
+	if err != nil {
+		return err
+	}
+
+	var startDay int64
+	if !lastAggregateDay.Valid {
+		// No aggregates exist yet, find earliest data point
+		var earliestReading sql.NullInt64
+		err := db.QueryRow("SELECT MIN(timestamp) FROM live_power_readings").Scan(&earliestReading)
+		if err != nil {
+			return err
+		}
+
+		if !earliestReading.Valid {
+			// No data to aggregate
+			return nil
+		}
+
+		startDay = roundToDayStart(time.Unix(earliestReading.Int64, 0))
+		log.Printf("Starting daily aggregation from earliest data: %s", time.Unix(startDay, 0).Format(time.RFC3339))
+	} else {
+		// Start from the next day after the last aggregate
+		startDay = lastAggregateDay.Int64 + 86400
+	}
+
+	// Aggregate all days from startDay up to (but not including) current day
+	daysProcessed := 0
+	for dayStart := startDay; dayStart < currentDayStart; dayStart += 86400 {
+		if err := aggregateLivePowerDaily(dayStart); err != nil {
+			if err == ErrAggregateExists {
+				continue // Skip if already exists
+			}
+			if err == ErrTimeframeNotCompleted {
+				break // Stop if we hit current timeframe
+			}
+			log.Printf("Error aggregating daily live power for %s: %v", time.Unix(dayStart, 0).Format(time.RFC3339), err)
+			return err
+		}
+		daysProcessed++
+	}
+
+	if daysProcessed > 0 {
+		log.Printf("Processed %d daily aggregates", daysProcessed)
+	}
+
+	return nil
+}
+
+// processMonthlyAggregates creates monthly aggregates, backfilling from earliest data if needed
+func processMonthlyAggregates(db *sql.DB, now time.Time) error {
+	currentMonthStart := roundToMonthStart(now)
+
+	// Find the last monthly aggregate
+	var lastAggregateMonth sql.NullInt64
+	err := db.QueryRow("SELECT MAX(month_start) FROM aggregate_live_power_monthly").Scan(&lastAggregateMonth)
+	if err != nil {
+		return err
+	}
+
+	var startMonth int64
+	if !lastAggregateMonth.Valid {
+		// No aggregates exist yet, find earliest data point
+		var earliestReading sql.NullInt64
+		err := db.QueryRow("SELECT MIN(timestamp) FROM live_power_readings").Scan(&earliestReading)
+		if err != nil {
+			return err
+		}
+
+		if !earliestReading.Valid {
+			// No data to aggregate
+			return nil
+		}
+
+		startMonth = roundToMonthStart(time.Unix(earliestReading.Int64, 0))
+		log.Printf("Starting monthly aggregation from earliest data: %s", time.Unix(startMonth, 0).Format(time.RFC3339))
+	} else {
+		// Start from the next month after the last aggregate
+		t := time.Unix(lastAggregateMonth.Int64, 0)
+		startMonth = roundToMonthStart(t.AddDate(0, 1, 0))
+	}
+
+	// Aggregate all months from startMonth up to (but not including) current month
+	monthsProcessed := 0
+	for monthStart := startMonth; monthStart < currentMonthStart; {
+		if err := aggregateLivePowerMonthly(monthStart); err != nil {
+			if err == ErrAggregateExists {
+				// Move to next month
+				t := time.Unix(monthStart, 0)
+				monthStart = roundToMonthStart(t.AddDate(0, 1, 0))
+				continue
+			}
+			if err == ErrTimeframeNotCompleted {
+				break // Stop if we hit current timeframe
+			}
+			log.Printf("Error aggregating monthly live power for %s: %v", time.Unix(monthStart, 0).Format(time.RFC3339), err)
+			return err
+		}
+		monthsProcessed++
+
+		// Move to next month
+		t := time.Unix(monthStart, 0)
+		monthStart = roundToMonthStart(t.AddDate(0, 1, 0))
+	}
+
+	if monthsProcessed > 0 {
+		log.Printf("Processed %d monthly aggregates", monthsProcessed)
+	}
+
 	return nil
 }
