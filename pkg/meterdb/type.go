@@ -28,30 +28,30 @@ type MeterDbTotalGasReading struct {
 
 // Aggregate models - computed consumption deltas
 type AggregateLivePowerHourly struct {
-	HourStart          int64  `db:"hour_start"`
-	ConsumptionDayWh   uint32 `db:"consumption_day_wh"`
-	ConsumptionNightWh uint32 `db:"consumption_night_wh"`
-	ProductionDayWh    uint32 `db:"production_day_wh"`
-	ProductionNightWh  uint32 `db:"production_night_wh"`
-	SampleCount        uint32 `db:"sample_count"`
+	HourStart            int64  `db:"hour_start"`
+	ConsumptionDayWatt   uint32 `db:"consumption_day_watt"`
+	ConsumptionNightWatt uint32 `db:"consumption_night_watt"`
+	ProductionDayWatt    uint32 `db:"production_day_watt"`
+	ProductionNightWatt  uint32 `db:"production_night_watt"`
+	SampleCount          uint32 `db:"sample_count"`
 }
 
 type AggregateLivePowerDaily struct {
-	DayStart           int64  `db:"day_start"`
-	ConsumptionDayWh   uint32 `db:"consumption_day_wh"`
-	ConsumptionNightWh uint32 `db:"consumption_night_wh"`
-	ProductionDayWh    uint32 `db:"production_day_wh"`
-	ProductionNightWh  uint32 `db:"production_night_wh"`
-	SampleCount        uint32 `db:"sample_count"`
+	DayStart             int64  `db:"day_start"`
+	ConsumptionDayWatt   uint32 `db:"consumption_day_watt"`
+	ConsumptionNightWatt uint32 `db:"consumption_night_watt"`
+	ProductionDayWatt    uint32 `db:"production_day_watt"`
+	ProductionNightWatt  uint32 `db:"production_night_watt"`
+	SampleCount          uint32 `db:"sample_count"`
 }
 
 type AggregateLivePowerMonthly struct {
-	MonthStart         int64  `db:"month_start"`
-	ConsumptionDayWh   uint32 `db:"consumption_day_wh"`
-	ConsumptionNightWh uint32 `db:"consumption_night_wh"`
-	ProductionDayWh    uint32 `db:"production_day_wh"`
-	ProductionNightWh  uint32 `db:"production_night_wh"`
-	SampleCount        uint32 `db:"sample_count"`
+	MonthStart           int64  `db:"month_start"`
+	ConsumptionDayWatt   uint32 `db:"consumption_day_watt"`
+	ConsumptionNightWatt uint32 `db:"consumption_night_watt"`
+	ProductionDayWatt    uint32 `db:"production_day_watt"`
+	ProductionNightWatt  uint32 `db:"production_night_watt"`
+	SampleCount          uint32 `db:"sample_count"`
 }
 
 // Snapshot models - retained meter readings

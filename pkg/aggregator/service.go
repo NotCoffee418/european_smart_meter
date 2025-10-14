@@ -112,20 +112,20 @@ func aggregateLivePowerHourly(hourStart int64) error {
 		return nil
 	}
 
-	// Convert watts to watthours (average watt for 1 hour = watthours)
-	consumptionDayWh := uint32(aggregateData[meterdb.PowerConsumptionDay])
-	consumptionNightWh := uint32(aggregateData[meterdb.PowerConsumptionNight])
-	productionDayWh := uint32(aggregateData[meterdb.PowerProductionDay])
-	productionNightWh := uint32(aggregateData[meterdb.PowerProductionNight])
+	// Store average watts directly (not watthours)
+	consumptionDayWatt := uint32(aggregateData[meterdb.PowerConsumptionDay])
+	consumptionNightWatt := uint32(aggregateData[meterdb.PowerConsumptionNight])
+	productionDayWatt := uint32(aggregateData[meterdb.PowerProductionDay])
+	productionNightWatt := uint32(aggregateData[meterdb.PowerProductionNight])
 
 	// Insert or replace the aggregate
 	insertQuery := `
 		INSERT OR REPLACE INTO aggregate_live_power_hourly 
-		(hour_start, consumption_day_wh, consumption_night_wh, production_day_wh, production_night_wh, sample_count)
+		(hour_start, consumption_day_watt, consumption_night_watt, production_day_watt, production_night_watt, sample_count)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(insertQuery, hourStart, consumptionDayWh, consumptionNightWh, productionDayWh, productionNightWh, totalSampleCount)
+	_, err = db.Exec(insertQuery, hourStart, consumptionDayWatt, consumptionNightWatt, productionDayWatt, productionNightWatt, totalSampleCount)
 	return err
 }
 
@@ -195,20 +195,20 @@ func aggregateLivePowerDaily(dayStart int64) error {
 		return nil
 	}
 
-	// For daily aggregates, we need to multiply by 24 hours
-	consumptionDayWh := uint32(aggregateData[meterdb.PowerConsumptionDay] * 24)
-	consumptionNightWh := uint32(aggregateData[meterdb.PowerConsumptionNight] * 24)
-	productionDayWh := uint32(aggregateData[meterdb.PowerProductionDay] * 24)
-	productionNightWh := uint32(aggregateData[meterdb.PowerProductionNight] * 24)
+	// Store average watts directly (not watthours)
+	consumptionDayWatt := uint32(aggregateData[meterdb.PowerConsumptionDay])
+	consumptionNightWatt := uint32(aggregateData[meterdb.PowerConsumptionNight])
+	productionDayWatt := uint32(aggregateData[meterdb.PowerProductionDay])
+	productionNightWatt := uint32(aggregateData[meterdb.PowerProductionNight])
 
 	// Insert or replace the aggregate
 	insertQuery := `
 		INSERT OR REPLACE INTO aggregate_live_power_daily 
-		(day_start, consumption_day_wh, consumption_night_wh, production_day_wh, production_night_wh, sample_count)
+		(day_start, consumption_day_watt, consumption_night_watt, production_day_watt, production_night_watt, sample_count)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(insertQuery, dayStart, consumptionDayWh, consumptionNightWh, productionDayWh, productionNightWh, totalSampleCount)
+	_, err = db.Exec(insertQuery, dayStart, consumptionDayWatt, consumptionNightWatt, productionDayWatt, productionNightWatt, totalSampleCount)
 	return err
 }
 
@@ -278,24 +278,20 @@ func aggregateLivePowerMonthly(monthStart int64) error {
 		return nil
 	}
 
-	// For monthly aggregates, calculate hours in the month
-	t := time.Unix(monthStart, 0)
-	daysInMonth := time.Date(t.Year(), t.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
-	hoursInMonth := float64(daysInMonth * 24)
-
-	consumptionDayWh := uint32(aggregateData[meterdb.PowerConsumptionDay] * hoursInMonth)
-	consumptionNightWh := uint32(aggregateData[meterdb.PowerConsumptionNight] * hoursInMonth)
-	productionDayWh := uint32(aggregateData[meterdb.PowerProductionDay] * hoursInMonth)
-	productionNightWh := uint32(aggregateData[meterdb.PowerProductionNight] * hoursInMonth)
+	// Store average watts directly (not watthours)
+	consumptionDayWatt := uint32(aggregateData[meterdb.PowerConsumptionDay])
+	consumptionNightWatt := uint32(aggregateData[meterdb.PowerConsumptionNight])
+	productionDayWatt := uint32(aggregateData[meterdb.PowerProductionDay])
+	productionNightWatt := uint32(aggregateData[meterdb.PowerProductionNight])
 
 	// Insert or replace the aggregate
 	insertQuery := `
 		INSERT OR REPLACE INTO aggregate_live_power_monthly 
-		(month_start, consumption_day_wh, consumption_night_wh, production_day_wh, production_night_wh, sample_count)
+		(month_start, consumption_day_watt, consumption_night_watt, production_day_watt, production_night_watt, sample_count)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(insertQuery, monthStart, consumptionDayWh, consumptionNightWh, productionDayWh, productionNightWh, totalSampleCount)
+	_, err = db.Exec(insertQuery, monthStart, consumptionDayWatt, consumptionNightWatt, productionDayWatt, productionNightWatt, totalSampleCount)
 	return err
 }
 
@@ -375,7 +371,7 @@ func snapshotTotalPowerHourly(hourStart int64) error {
 
 	hourEnd := getHourEnd(hourStart)
 
-	// For power, we look 24 hours before the end of the timeframe
+	// For power, we look 24 hours before the hour end (not just within the hour)
 	lookbackStart := hourEnd - (24 * 3600)
 
 	// Helper function to get the last known reading for a specific type
@@ -383,13 +379,13 @@ func snapshotTotalPowerHourly(hourStart int64) error {
 		query := `
 			SELECT watthour
 			FROM total_power_readings
-			WHERE reading_type = ? AND timestamp >= ? AND timestamp <= ?
+			WHERE reading_type = ? AND timestamp <= ? AND timestamp >= ?
 			ORDER BY timestamp DESC
 			LIMIT 1
 		`
 
 		var watthour uint32
-		err := db.QueryRow(query, readingType, lookbackStart, hourEnd).Scan(&watthour)
+		err := db.QueryRow(query, readingType, hourEnd, lookbackStart).Scan(&watthour)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return 0, false
