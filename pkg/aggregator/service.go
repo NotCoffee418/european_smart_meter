@@ -113,14 +113,15 @@ func aggregateLivePowerHourly(hourStart int64) error {
 	}
 
 	// Store average watts directly (not watthours)
+	// Note: Missing types will default to 0, which is correct if no readings exist for that type
 	consumptionDayWatt := uint32(aggregateData[meterdb.PowerConsumptionDay])
 	consumptionNightWatt := uint32(aggregateData[meterdb.PowerConsumptionNight])
 	productionDayWatt := uint32(aggregateData[meterdb.PowerProductionDay])
 	productionNightWatt := uint32(aggregateData[meterdb.PowerProductionNight])
 
-	// Insert or replace the aggregate
+	// Insert the aggregate (using INSERT not INSERT OR REPLACE to detect duplicates properly)
 	insertQuery := `
-		INSERT OR REPLACE INTO aggregate_live_power_hourly 
+		INSERT INTO aggregate_live_power_hourly 
 		(hour_start, consumption_day_watt, consumption_night_watt, production_day_watt, production_night_watt, sample_count)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
@@ -201,9 +202,9 @@ func aggregateLivePowerDaily(dayStart int64) error {
 	productionDayWatt := uint32(aggregateData[meterdb.PowerProductionDay])
 	productionNightWatt := uint32(aggregateData[meterdb.PowerProductionNight])
 
-	// Insert or replace the aggregate
+	// Insert the aggregate (using INSERT not INSERT OR REPLACE to detect duplicates properly)
 	insertQuery := `
-		INSERT OR REPLACE INTO aggregate_live_power_daily 
+		INSERT INTO aggregate_live_power_daily 
 		(day_start, consumption_day_watt, consumption_night_watt, production_day_watt, production_night_watt, sample_count)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
@@ -284,9 +285,9 @@ func aggregateLivePowerMonthly(monthStart int64) error {
 	productionDayWatt := uint32(aggregateData[meterdb.PowerProductionDay])
 	productionNightWatt := uint32(aggregateData[meterdb.PowerProductionNight])
 
-	// Insert or replace the aggregate
+	// Insert the aggregate (using INSERT not INSERT OR REPLACE to detect duplicates properly)
 	insertQuery := `
-		INSERT OR REPLACE INTO aggregate_live_power_monthly 
+		INSERT INTO aggregate_live_power_monthly 
 		(month_start, consumption_day_watt, consumption_night_watt, production_day_watt, production_night_watt, sample_count)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
@@ -337,9 +338,9 @@ func snapshotTotalGasHourly(hourStart int64) error {
 		return err
 	}
 
-	// Insert or replace the snapshot
+	// Insert the snapshot (using INSERT not INSERT OR REPLACE to detect duplicates properly)
 	insertQuery := `
-		INSERT OR REPLACE INTO snapshot_total_gas_hourly 
+		INSERT INTO snapshot_total_gas_hourly 
 		(timestamp, dm3_standing)
 		VALUES (?, ?)
 	`
@@ -407,9 +408,9 @@ func snapshotTotalPowerHourly(hourStart int64) error {
 		return nil
 	}
 
-	// Insert or replace the snapshot
+	// Insert the snapshot (using INSERT not INSERT OR REPLACE to detect duplicates properly)
 	insertQuery := `
-		INSERT OR REPLACE INTO snapshot_total_power_hourly 
+		INSERT INTO snapshot_total_power_hourly 
 		(timestamp, consumption_day_standing, consumption_night_standing, production_day_standing, production_night_standing)
 		VALUES (?, ?, ?, ?, ?)
 	`
@@ -439,31 +440,51 @@ func cleanupOldData() error {
 		return nil
 	}
 
-	// Only clean up if we have aggregated data up to the cutoff point
-	if lastAggregateHour.Int64 < cutoffTimestamp {
-		// We haven't aggregated enough data yet, don't clean up
+	// Calculate the end of the last aggregated hour (hour_start + 1 hour - 1 second)
+	lastAggregatedEnd := lastAggregateHour.Int64 + 3600 - 1
+
+	// Only clean up data where the timeframe has ended and been aggregated
+	// This means we can safely delete data up to the end of the last aggregated hour,
+	// but we also want to respect the 3-month retention period
+	deleteUpTo := cutoffTimestamp
+	if lastAggregatedEnd < cutoffTimestamp {
+		// We haven't aggregated up to the cutoff point, so only delete up to what we've aggregated
+		deleteUpTo = lastAggregatedEnd
+	}
+
+	// Don't delete anything if we haven't aggregated any data old enough
+	if deleteUpTo < cutoffTimestamp {
+		log.Printf("Not cleaning up - oldest deletable data is at %s, cutoff is %s",
+			time.Unix(deleteUpTo, 0).Format(time.RFC3339),
+			time.Unix(cutoffTimestamp, 0).Format(time.RFC3339))
 		return nil
 	}
 
 	// Delete old live power readings
-	_, err = db.Exec("DELETE FROM live_power_readings WHERE timestamp < ?", cutoffTimestamp)
+	result, err := db.Exec("DELETE FROM live_power_readings WHERE timestamp <= ?", deleteUpTo)
 	if err != nil {
 		return err
 	}
+	rowsAffected, _ := result.RowsAffected()
+	log.Printf("Deleted %d live power readings", rowsAffected)
 
 	// Delete old total power readings
-	_, err = db.Exec("DELETE FROM total_power_readings WHERE timestamp < ?", cutoffTimestamp)
+	result, err = db.Exec("DELETE FROM total_power_readings WHERE timestamp <= ?", deleteUpTo)
 	if err != nil {
 		return err
 	}
+	rowsAffected, _ = result.RowsAffected()
+	log.Printf("Deleted %d total power readings", rowsAffected)
 
 	// Delete old total gas readings
-	_, err = db.Exec("DELETE FROM total_gas_readings WHERE timestamp < ?", cutoffTimestamp)
+	result, err = db.Exec("DELETE FROM total_gas_readings WHERE timestamp <= ?", deleteUpTo)
 	if err != nil {
 		return err
 	}
+	rowsAffected, _ = result.RowsAffected()
+	log.Printf("Deleted %d total gas readings", rowsAffected)
 
-	log.Printf("Cleaned up data older than %s", threeMonthsAgo.Format(time.RFC3339))
+	log.Printf("Cleaned up data up to %s", time.Unix(deleteUpTo, 0).Format(time.RFC3339))
 	return nil
 }
 
