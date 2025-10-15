@@ -49,7 +49,7 @@ func main() {
 	// Run aggregation on startup
 	go func() {
 		log.Println("Running initial aggregation on startup...")
-		if err := aggregator.AggregateAndCleanup(); err != nil {
+		if err := aggregator.RunAggregationAndCleanup(); err != nil {
 			log.Printf("Initial aggregation failed: %v", err)
 		}
 	}()
@@ -61,7 +61,7 @@ func main() {
 
 		for range ticker.C {
 			log.Println("Running scheduled aggregation...")
-			if err := aggregator.AggregateAndCleanup(); err != nil {
+			if err := aggregator.RunAggregationAndCleanup(); err != nil {
 				log.Printf("Scheduled aggregation failed: %v", err)
 			}
 		}

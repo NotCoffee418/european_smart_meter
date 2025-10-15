@@ -27,32 +27,22 @@ type MeterDbTotalGasReading struct {
 }
 
 // Aggregate models - computed consumption deltas
-type AggregateLivePowerHourly struct {
-	HourStart            int64  `db:"hour_start"`
-	ConsumptionDayWatt   uint32 `db:"consumption_day_watt"`
-	ConsumptionNightWatt uint32 `db:"consumption_night_watt"`
-	ProductionDayWatt    uint32 `db:"production_day_watt"`
-	ProductionNightWatt  uint32 `db:"production_night_watt"`
-	SampleCount          uint32 `db:"sample_count"`
+// Use timeframe specified types instead of this directly
+type AggregateLivePowerTable struct {
+	StartTime                   int64  `db:"start_time"`
+	ConsumptionDayWh            uint32 `db:"consumption_day_wh"`
+	ConsumptionDaySampleCount   uint32 `db:"consumption_day_sample_count"`
+	ConsumptionNightWh          uint32 `db:"consumption_night_wh"`
+	ConsumptionNightSampleCount uint32 `db:"consumption_night_sample_count"`
+	ProductionDayWh             uint32 `db:"production_day_wh"`
+	ProductionDaySampleCount    uint32 `db:"production_day_sample_count"`
+	ProductionNightWh           uint32 `db:"production_night_wh"`
+	ProductionNightSampleCount  uint32 `db:"production_night_sample_count"`
 }
 
-type AggregateLivePowerDaily struct {
-	DayStart             int64  `db:"day_start"`
-	ConsumptionDayWatt   uint32 `db:"consumption_day_watt"`
-	ConsumptionNightWatt uint32 `db:"consumption_night_watt"`
-	ProductionDayWatt    uint32 `db:"production_day_watt"`
-	ProductionNightWatt  uint32 `db:"production_night_watt"`
-	SampleCount          uint32 `db:"sample_count"`
-}
-
-type AggregateLivePowerMonthly struct {
-	MonthStart           int64  `db:"month_start"`
-	ConsumptionDayWatt   uint32 `db:"consumption_day_watt"`
-	ConsumptionNightWatt uint32 `db:"consumption_night_watt"`
-	ProductionDayWatt    uint32 `db:"production_day_watt"`
-	ProductionNightWatt  uint32 `db:"production_night_watt"`
-	SampleCount          uint32 `db:"sample_count"`
-}
+type AggregateLivePowerHourly = AggregateLivePowerTable
+type AggregateLivePowerDaily = AggregateLivePowerTable
+type AggregateLivePowerMonthly = AggregateLivePowerTable
 
 // Snapshot models - retained meter readings
 type SnapshotTotalPowerHourly struct {
