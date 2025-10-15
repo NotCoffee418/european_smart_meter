@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/NotCoffee418/european_smart_meter/pkg/aggregator"
 	"github.com/NotCoffee418/european_smart_meter/pkg/config"
 	"github.com/NotCoffee418/european_smart_meter/pkg/esmutils"
 	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter"
@@ -44,6 +45,27 @@ func main() {
 	// Live power: Value changes constantly and is dependent on type
 	// Total power: Type changes throughout the day, we don't need to update night data during the day
 	loadLastTotalPowerReadings()
+
+	// Run aggregation on startup
+	go func() {
+		log.Println("Running initial aggregation on startup...")
+		if err := aggregator.RunAggregationAndCleanup(); err != nil {
+			log.Printf("Initial aggregation failed: %v", err)
+		}
+	}()
+
+	// Start hourly aggregation ticker
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			log.Println("Running scheduled aggregation...")
+			if err := aggregator.RunAggregationAndCleanup(); err != nil {
+				log.Printf("Scheduled aggregation failed: %v", err)
+			}
+		}
+	}()
 
 	// Subscribe to websocket with revive
 	interpreter.StartListener(host, tls, handleMeterReading)
