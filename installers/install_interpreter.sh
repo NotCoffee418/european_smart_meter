@@ -114,6 +114,9 @@ serial_device = "$SERIAL_DEVICE"
 baudrate = $BAUDRATE
 listen_address = "0.0.0.0"
 listen_port = 9039
+solar_inverter_ip = "192.168.200.1"
+solar_inverter_modbus_port = 502 # nmap -p 80,443,502,6607,8000,8080 192.168.200.1
+wlan_connection_id = "preconfigured"  # Check with `nmcli device status`
 EOF
 fi
 

@@ -147,6 +147,7 @@ This service is essential for all other services to work and can be optionally r
 
 - **/latest**: Get the latest data from the smart meter
 - **/ws**: Subscribe to the websocket endpoint to get real-time data from the smart meter
+- **/solar**: Get current power production from solar inverter
 
 Both output the following JSON response structure:
 
@@ -208,6 +209,13 @@ You can check if you're receiving data by running the following command:
 
 ```bash
 python3 -m serial.tools.miniterm /dev/ttyUSB0 115200 --xonxoff
+```
+
+### Solar inverter wifi not connecting
+Only accepts 1 device.  
+```bash
+# On Pi if debugging on pc
+sudo nmcli connection down preconfigured
 ```
 
 ## Unsorted info (todo)

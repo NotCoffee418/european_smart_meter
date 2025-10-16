@@ -11,6 +11,7 @@ import (
 	"github.com/NotCoffee418/european_smart_meter/pkg/config"
 	"github.com/NotCoffee418/european_smart_meter/pkg/interpreter"
 	"github.com/NotCoffee418/european_smart_meter/pkg/port_reader"
+	"github.com/NotCoffee418/european_smart_meter/pkg/solarinverter"
 	"github.com/gorilla/websocket"
 )
 
@@ -34,6 +35,7 @@ func main() {
 		log.Fatalf("Failed to load interpreter API config: %v", err)
 	}
 
+	// Start P1 reader
 	p1Reader = port_reader.NewP1Reader(
 		config.ActiveInterpreterAPIConfig.SerialDevice,
 		config.ActiveInterpreterAPIConfig.Baudrate,
@@ -54,7 +56,7 @@ func main() {
 	// Setup HTTP handlers
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]string{
-			"message": "Belgian Smart Meter API",
+			"message": "European Smart Meter API",
 			"status":  "running",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -63,8 +65,8 @@ func main() {
 
 	http.HandleFunc("/latest", func(w http.ResponseWriter, r *http.Request) {
 		reading := p1Reader.GetLatestReading()
+		w.Header().Set("Content-Type", "application/json")
 		if reading == nil {
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(map[string]string{
 				"error": "No readings available yet",
@@ -72,7 +74,6 @@ func main() {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(reading)
 	})
 
@@ -98,6 +99,22 @@ func main() {
 				break
 			}
 		}
+	})
+
+	// May be fast or slow depending on cached response from inverter.
+	http.HandleFunc("/solar", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		power, err := solarinverter.ReadSolarData()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]int32{
+			"currentProduction": power,
+		})
 	})
 
 	listener := fmt.Sprintf("%s:%d", config.ActiveInterpreterAPIConfig.ListenAddress, config.ActiveInterpreterAPIConfig.ListenPort)

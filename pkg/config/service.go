@@ -19,10 +19,13 @@ func LoadInterpreterAPIConfig() error {
 	// Create default if not exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		cfg := &InterpreterAPIConfig{
-			SerialDevice:  "/dev/ttyUSB0",
-			Baudrate:      115200,
-			ListenAddress: "0.0.0.0",
-			ListenPort:    9039,
+			SerialDevice:            "/dev/ttyUSB0",
+			Baudrate:                115200,
+			ListenAddress:           "0.0.0.0",
+			ListenPort:              9039,
+			SolarInverterIp:         "192.168.200.1",
+			SolarInverterModbusPort: 502,
+			WlanConnectionId:        "preconfigured", // Check with `nmcli device status`
 		}
 		// Create file
 		cfgFile, err := os.Create(configPath)
