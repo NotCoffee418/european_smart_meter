@@ -13,6 +13,93 @@ This was designed for Belgian meters but should work for other countries as well
 - [P1 Smart Meter Cable](https://webshop.cedel.nl/nl/Slimme-meter-kabel-P1-naar-USB)
 - [Activated P1 port on your smart meter](https://www.stroohm.be/en/help/using-and-accessing-the-p1-port-of-the-digital-meter-in-belgium/)
 
+## Set up networking
+- Connect the ethernet cable to the router
+- Adjust wifi settings to connect to solar panel.
+
+### Configure wireless credentials
+```bash
+sudo nano /etc/NetworkManager/system-connections/preconfigured.nmconnection
+```
+Adjust the credentials in the file. Ensure no properties are missing or the connection will just drop out and not recover after a few days.
+```ini
+[connection]
+id=preconfigured
+uuid=58af4df0-76cf-4270-957d-1f8c5773051d
+type=wifi
+timestamp=1758825933
+
+[wifi]
+mode=infrastructure
+ssid=XXXXXXXXXXXXXXXXXXXXX
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk=XXXXXXXXXXXXXXXXXXXXXX
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=default
+method=auto
+
+[proxy]
+```
+```bash
+sudo nmcli connection reload
+sudo nmcli connection down preconfigured
+sudo nmcli connection up preconfigured
+# Check wifi connection
+iwgetid -r # Should be SUNXXXX
+```
+
+### Set up firewall for wlan
+Block everything on wlan to avoid solar being used as an access point to the network.  
+Check device names to confirm with `nmcli connection show`
+```bash
+# Install ufw
+sudo apt-get install ufw
+
+# Disable first to configure safely
+sudo ufw disable
+
+# Default policies - deny everything
+sudo ufw default deny incoming
+sudo ufw default deny outgoing
+
+# Allow everything on eth0 (or whatever your main interface is)
+sudo ufw allow in on eth0
+sudo ufw allow out on eth0
+
+# Allow loopback
+sudo ufw allow in on lo
+sudo ufw allow out on lo
+
+# Block ALL incoming on wlan0
+sudo ufw deny in on wlan0
+
+# Allow ICMP out on wlan0 to specific IP
+sudo ufw allow out on wlan0 to 192.168.200.1
+
+# And ping too
+sudo ufw allow out on wlan0 proto icmp to 192.168.200.1
+
+# Enable ufw
+sudo ufw --force enable
+
+# Check status
+sudo ufw status verbose
+```
+
+```bash
+# Check wifi connection
+iwgetid -r
+
+# Confirm solar inverter IP is reachable
+ping 192.168.200.1
+```
+
 ## Installation
 
 1. [Set up Raspberry Pi](https://www.raspberrypi.com/documentation/computers/getting-started.html)
