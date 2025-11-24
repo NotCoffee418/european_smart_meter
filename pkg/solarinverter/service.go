@@ -18,6 +18,12 @@ var (
 	ErrModbusNotConnected  = fmt.Errorf("modbus not connected")
 )
 
+const (
+	// CacheDuration defines how long to cache solar inverter readings
+	// to avoid overloading the inverter with frequent polls
+	CacheDuration = 10 * time.Second
+)
+
 var (
 	solarPowerMu      sync.Mutex
 	lastSolarReadWatt int32 = 0
@@ -41,7 +47,7 @@ func ReadSolarData() (int32, error) {
 	// Use cached reads to avoid spamming the poor inverter
 	solarPowerMu.Lock()
 	defer solarPowerMu.Unlock()
-	if lastSolarReadTime.After(time.Now().Add(-10 * time.Second)) {
+	if lastSolarReadTime.After(time.Now().Add(-CacheDuration)) {
 		return lastSolarReadWatt, nil
 	}
 
