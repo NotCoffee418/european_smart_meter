@@ -41,7 +41,7 @@ func ReadSolarData() (int32, error) {
 	// Use cached reads to avoid spamming the poor inverter
 	solarPowerMu.Lock()
 	defer solarPowerMu.Unlock()
-	if lastSolarReadTime.After(time.Now().Add(-30 * time.Second)) {
+	if lastSolarReadTime.After(time.Now().Add(-10 * time.Second)) {
 		return lastSolarReadWatt, nil
 	}
 
