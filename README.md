@@ -225,6 +225,8 @@ Only accepts 1 device.
 # On Pi if debugging on pc
 sudo nmcli connection down preconfigured
 ```
+If nothing works, Turn off solar inverter switch and kill power for 30s.
+
 
 ## Unsorted info (todo)
 ### Paths
