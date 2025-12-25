@@ -7,6 +7,12 @@ Modular services to interact with the European smart meter designed to run on a 
 
 This was designed for Belgian meters but should work for other countries as well.
 
+## Current state
+This tool has expanded to be rather integrated with my own personal setup, it will need to be customized for your own setup.  
+It's data collecting features work, but other parts may be half implemented or missing features.  
+I currently only use this as a gateway between my smart meter and my [power_control_center](https://github.com/NotCoffee418/power_control_center) tool which manages airco units based on live readings from this API.  
+Additionally, there is the needless baggage of getting data off my specific solar inverter. Use the code freely, but I would strip it or only use specific modules for your own purposes.
+
 ## Requirements
 
 - Raspberry Pi 3+ (or other Linux machine)
