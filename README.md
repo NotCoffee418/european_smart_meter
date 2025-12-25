@@ -27,6 +27,8 @@ Adjust the credentials in the file. Ensure no properties are missing or the conn
 id=preconfigured
 uuid=58af4df0-76cf-4270-957d-1f8c5773051d
 type=wifi
+autoconnect-retrues=0
+interface-name=wlan0 #change if needed
 timestamp=1758825933
 
 [wifi]
@@ -36,13 +38,13 @@ ssid=XXXXXXXXXXXXXXXXXXXXX
 [wifi-security]
 key-mgmt=wpa-psk
 psk=XXXXXXXXXXXXXXXXXXXXXX
+auth-timeout=30
 
 [ipv4]
 method=auto
 
 [ipv6]
-addr-gen-mode=default
-method=auto
+method=disabled
 
 [proxy]
 ```
